@@ -32,6 +32,10 @@ export type {
   AggregatedPrompt,
 } from "./manager";
 
+// Export tool adapter implementation
+export { McpToolAdapter, McpToolAdapterManager } from "./tool-adapter";
+export type { McpToolWrapper, McpToolAdapterOptions } from "./tool-adapter";
+
 // Export transports
 export * from "./transports";
 

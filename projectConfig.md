@@ -109,28 +109,34 @@ graph TB
 sequenceDiagram
     participant U as User
     participant C as Copilot Chat
+    participant IA as IntentAnalyzer
+    participant TA as MCPToolAdapter
     participant TM as ToolManager
     participant MM as MCPManager
     participant MC as MCPClient
     participant MS as MCP Server
 
     U->>C: 發送訊息
-    C->>TM: 檢查可用工具
-    TM->>MM: 獲取 MCP 工具
+    C->>IA: 分析意圖
+    IA->>TA: 獲取 MCP 工具
+    TA->>MM: 獲取可用工具
     MM->>MC: 列出工具
     MC->>MS: listTools()
     MS-->>MC: 返回工具列表
     MC-->>MM: 工具列表
-    MM-->>TM: MCP 工具
-    TM-->>C: 所有可用工具
+    MM-->>TA: 聚合工具
+    TA-->>IA: 包裝的 MCP 工具
+    IA-->>C: 工具調用計劃
 
-    C->>TM: 執行 MCP 工具
-    TM->>MM: 調用 MCP 工具
+    C->>TM: 執行工具
+    TM->>TA: 調用 MCP 工具
+    TA->>MM: 調用原始工具
     MM->>MC: callTool()
     MC->>MS: 執行工具
     MS-->>MC: 工具結果
     MC-->>MM: 結果
-    MM-->>TM: 結果
+    MM-->>TA: 結果
+    TA-->>TM: 格式化結果
     TM-->>C: 工具輸出
     C-->>U: 顯示結果
 ```
@@ -143,31 +149,41 @@ graph LR
         A[Copilot Plugin]
         B[MCPManager]
         C[MCPClient]
+        D[MCPToolAdapter]
+        E[IntentAnalyzer]
+        F[ToolManager]
+
         A --> B
+        A --> D
+        A --> E
+        A --> F
         B --> C
+        D --> B
+        E --> D
+        F --> D
     end
 
     subgraph "MCP Server Process 1"
-        D[Python Server]
-        E[Database Tools]
-        D --> E
+        G[Python Server]
+        H[Database Tools]
+        G --> H
     end
 
     subgraph "MCP Server Process 2"
-        F[Node.js Server]
-        G[Web API Tools]
-        F --> G
+        I[Node.js Server]
+        J[Web API Tools]
+        I --> J
     end
 
     subgraph "MCP Server Process 3"
-        H[Custom Server]
-        I[File Tools]
-        H --> I
+        K[Custom Server]
+        L[File Tools]
+        K --> L
     end
 
-    C -->|Stdio| D
-    C -->|Stdio| F
-    C -->|SSE| H
+    C -->|Stdio| G
+    C -->|Stdio| I
+    C -->|SSE| K
 ```
 
 ## 任務列表
@@ -208,10 +224,11 @@ graph LR
    - 完成日期: 2025/5/29
 
 5. **Task 5: MCPToolAdapter 實作**
-   - 狀態: TODO
-   - 描述: 建立 MCP 工具適配器，將 MCP 工具整合到現有工具系統
+   - 狀態: COMPLETED
+   - 描述: 建立 MCP 工具適配器，將 MCP 工具整合到現有工具系統，使 MCP 工具可在聊天中使用
    - 依賴: Task 4
    - 完成標準: 適配器完成，MCP 工具可在聊天中使用
+   - 完成日期: 2025/5/29
 
 ### Configuration Tasks (設定系統)
 
@@ -304,5 +321,6 @@ graph LR
 ## 進度記錄
 
 - 專案啟動日期: 2025/5/29
-- 當前階段: 需求分析和架構設計
-- 下一個里程碑: 完成基礎設施建設 (Task 1-5)
+- 當前階段: MCP 基礎設施建設完成
+- 下一個里程碑: 完成配置系統 (Task 6-7)
+- MCP 核心組件完成: MCPClient, MCPManager, MCPToolAdapter 已實作並測試通過
