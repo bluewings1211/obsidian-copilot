@@ -1,7 +1,6 @@
 import { ChainType, Document } from "@/chainFactory";
 import {
   ChatModelProviders,
-  EmbeddingModelProviders,
   NOMIC_EMBED_TEXT,
   Provider,
   ProviderInfo,
@@ -732,8 +731,6 @@ export function getNeedSetKeyProvider() {
     ChatModelProviders.OLLAMA,
     ChatModelProviders.LM_STUDIO,
     ChatModelProviders.AZURE_OPENAI,
-    EmbeddingModelProviders.COPILOT_PLUS,
-    EmbeddingModelProviders.COPILOT_PLUS_JINA,
   ];
 
   return Object.entries(ProviderInfo)

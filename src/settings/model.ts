@@ -11,6 +11,7 @@ import {
   DEFAULT_SYSTEM_PROMPT,
   EmbeddingModelProviders,
 } from "@/constants";
+import { type McpIntegrationSettings } from "@/mcp/types";
 
 export interface InlineEditCommandSettings {
   /**
@@ -97,6 +98,7 @@ export interface CopilotSettings {
   inlineEditCommands: InlineEditCommandSettings[] | undefined;
   passMarkdownImages: boolean;
   enableCustomPromptTemplating: boolean;
+  mcpIntegration: McpIntegrationSettings;
 }
 
 export const settingsStore = createStore();
@@ -224,6 +226,36 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
     sanitizedSettings.enableCustomPromptTemplating = DEFAULT_SETTINGS.enableCustomPromptTemplating;
   }
 
+  // Ensure mcpIntegration has default values
+  if (!sanitizedSettings.mcpIntegration) {
+    sanitizedSettings.mcpIntegration = DEFAULT_SETTINGS.mcpIntegration;
+  } else {
+    // Validate and sanitize mcpIntegration properties by creating a new object
+    const mcpSettings = sanitizedSettings.mcpIntegration;
+    const defaultMcp = DEFAULT_SETTINGS.mcpIntegration;
+
+    const globalTimeout = Number(mcpSettings.globalTimeout);
+    const maxConcurrentConnections = Number(mcpSettings.maxConcurrentConnections);
+
+    sanitizedSettings.mcpIntegration = {
+      enabled: typeof mcpSettings.enabled === "boolean" ? mcpSettings.enabled : defaultMcp.enabled,
+      servers: Array.isArray(mcpSettings.servers) ? mcpSettings.servers : defaultMcp.servers,
+      globalTimeout: isNaN(globalTimeout) ? defaultMcp.globalTimeout : globalTimeout,
+      maxConcurrentConnections: isNaN(maxConcurrentConnections)
+        ? defaultMcp.maxConcurrentConnections
+        : maxConcurrentConnections,
+      debugMode:
+        typeof mcpSettings.debugMode === "boolean" ? mcpSettings.debugMode : defaultMcp.debugMode,
+      logLevel:
+        mcpSettings.logLevel &&
+        ["debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"].includes(
+          mcpSettings.logLevel
+        )
+          ? mcpSettings.logLevel
+          : defaultMcp.logLevel,
+    };
+  }
+
   return sanitizedSettings;
 }
 
@@ -290,4 +322,89 @@ function mergeActiveModels(
   });
 
   return Array.from(modelMap.values());
+}
+
+// ==============================================================================
+// MCP Settings Utilities
+// ==============================================================================
+
+/**
+ * Add a new MCP server configuration
+ */
+export function addMcpServer(serverConfig: import("@/mcp/types").McpServerConfig): void {
+  const settings = getSettings();
+  const newServers = [...settings.mcpIntegration.servers, serverConfig];
+  updateSetting("mcpIntegration", {
+    ...settings.mcpIntegration,
+    servers: newServers,
+  });
+}
+
+/**
+ * Update an existing MCP server configuration
+ */
+export function updateMcpServer(
+  serverId: string,
+  updates: Partial<import("@/mcp/types").McpServerConfig>
+): void {
+  const settings = getSettings();
+  const servers = settings.mcpIntegration.servers.map((server) =>
+    server.id === serverId ? { ...server, ...updates } : server
+  );
+  updateSetting("mcpIntegration", {
+    ...settings.mcpIntegration,
+    servers,
+  });
+}
+
+/**
+ * Remove an MCP server configuration
+ */
+export function removeMcpServer(serverId: string): void {
+  const settings = getSettings();
+  const servers = settings.mcpIntegration.servers.filter((server) => server.id !== serverId);
+  updateSetting("mcpIntegration", {
+    ...settings.mcpIntegration,
+    servers,
+  });
+}
+
+/**
+ * Get MCP server configuration by ID
+ */
+export function getMcpServer(serverId: string): import("@/mcp/types").McpServerConfig | undefined {
+  const settings = getSettings();
+  return settings.mcpIntegration.servers.find((server) => server.id === serverId);
+}
+
+/**
+ * Get all enabled MCP servers
+ */
+export function getEnabledMcpServers(): import("@/mcp/types").McpServerConfig[] {
+  const settings = getSettings();
+  return settings.mcpIntegration.servers.filter((server) => server.enabled);
+}
+
+/**
+ * Toggle MCP integration enabled state
+ */
+export function toggleMcpIntegration(enabled: boolean): void {
+  const settings = getSettings();
+  updateSetting("mcpIntegration", {
+    ...settings.mcpIntegration,
+    enabled,
+  });
+}
+
+/**
+ * Update MCP global settings
+ */
+export function updateMcpGlobalSettings(
+  updates: Partial<import("@/mcp/types").McpIntegrationSettings>
+): void {
+  const settings = getSettings();
+  updateSetting("mcpIntegration", {
+    ...settings.mcpIntegration,
+    ...updates,
+  });
 }

@@ -3,6 +3,8 @@ import { DEFAULT_INLINE_EDIT_COMMANDS } from "@/commands/constants";
 import { type CopilotSettings } from "@/settings/model";
 import { v4 as uuidv4 } from "uuid";
 import { ChainType } from "./chainFactory";
+import { DEFAULTS, LOG_LEVELS } from "@/mcp/constants";
+import { type McpIntegrationSettings } from "@/mcp/types";
 
 export const BREVILABS_API_BASE_URL = "https://api.brevilabs.com/v1";
 export const CHAT_VIEWTYPE = "copilot-chat-view";
@@ -559,6 +561,14 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   lastDismissedVersion: null,
   passMarkdownImages: true,
   enableCustomPromptTemplating: true,
+  mcpIntegration: {
+    enabled: false,
+    servers: [],
+    globalTimeout: DEFAULTS.CONNECTION_TIMEOUT,
+    maxConcurrentConnections: DEFAULTS.MAX_CONCURRENT_CONNECTIONS,
+    debugMode: false,
+    logLevel: LOG_LEVELS.INFO,
+  } as McpIntegrationSettings,
 };
 
 export const EVENT_NAMES = {
