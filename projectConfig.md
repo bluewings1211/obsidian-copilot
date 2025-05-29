@@ -183,26 +183,29 @@ graph LR
    - 完成日期: 2025/5/29
 
 2. **Task 2: MCP 核心介面定義**
-   - 狀態: TODO
+   - 狀態: COMPLETED
    - 描述: 定義 MCP 相關的 TypeScript 介面和類型
    - 依賴: Task 1
    - 完成標準: 類型定義檔案建立，涵蓋所有 MCP 概念
+   - 完成日期: 2025/5/29
 
 ### MCP Infrastructure Tasks (MCP 基礎設施)
 
 3. **Task 3: MCPClient 實作**
 
-   - 狀態: TODO
+   - 狀態: COMPLETED
    - 描述: 實作 MCP 客戶端類別，處理伺服器連接和通訊
    - 依賴: Task 2
    - 完成標準: MCPClient 類別完成，支援 stdio 和 SSE 傳輸
+   - 完成日期: 2025/5/29
 
 4. **Task 4: MCPManager 實作**
 
-   - 狀態: TODO
-   - 描述: 實作 MCP 管理器，負責管理多個 MCP 連接
+   - 狀態: COMPLETED
+   - 描述: 實作 MCP 管理器，負責管理多個 MCP 連接，支援多伺服器管理和統一的工具/資源接口
    - 依賴: Task 3
-   - 完成標準: MCPManager 類別完成，支援多伺服器管理
+   - 完成標準: MCPManager 類別完成，支援多伺服器管理和統一接口
+   - 完成日期: 2025/5/29
 
 5. **Task 5: MCPToolAdapter 實作**
    - 狀態: TODO
