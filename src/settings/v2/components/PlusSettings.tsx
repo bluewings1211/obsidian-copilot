@@ -1,22 +1,22 @@
-import { CopilotPlusWelcomeModal } from "@/components/modals/CopilotPlusWelcomeModal";
+// import { CopilotPlusWelcomeModal } from "@/components/modals/CopilotPlusWelcomeModal"; // Not used currently
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/ui/password-input";
+// import { PasswordInput } from "@/components/ui/password-input"; // Not used
 import { PLUS_UTM_MEDIUMS } from "@/constants";
 import { checkIsPlusUser, navigateToPlusPage, useIsPlusUser } from "@/plusUtils";
-import { updateSetting, useSettingsValue } from "@/settings/model";
+import { useSettingsValue } from "@/settings/model"; // updateSetting removed
 import { ExternalLink, Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react"; // useEffect removed
 
 export function PlusSettings() {
-  const settings = useSettingsValue();
+  useSettingsValue(); // Call useSettingsValue to ensure settings are loaded, but not assigned to unused 'settings'
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const isPlusUser = useIsPlusUser();
-  const [localLicenseKey, setLocalLicenseKey] = useState(settings.plusLicenseKey);
-  useEffect(() => {
-    setLocalLicenseKey(settings.plusLicenseKey);
-  }, [settings.plusLicenseKey]);
+  // const [localLicenseKey, setLocalLicenseKey] = useState(settings.plusLicenseKey); // Removed: plusLicenseKey is no longer in settings
+  // useEffect(() => { // Removed
+  //   setLocalLicenseKey(settings.plusLicenseKey);
+  // }, [settings.plusLicenseKey]);
 
   return (
     <section className="flex flex-col gap-4 bg-secondary p-4 rounded-lg">
@@ -31,8 +31,9 @@ export function PlusSettings() {
       <div className="text-sm text-muted flex flex-col gap-2">
         <div>
           Copilot Plus takes your Obsidian experience to the next level with cutting-edge AI
-          capabilities. This premium tier unlocks advanced features, including chat context, PDF and
-          image support, web search integration, exclusive chat and embedding models, and much more.
+          capabilities. This premium tier unlocks advanced features. Some features previously tied
+          to a license key are now determined by other configurations (e.g., Brave Search API Key
+          for web search).
         </div>
         <div>
           Currently in beta, Copilot Plus is evolving fast, with new features and improvements
@@ -40,37 +41,49 @@ export function PlusSettings() {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <PasswordInput
-          className="w-full"
-          placeholder="Enter your license key"
-          value={localLicenseKey}
-          onChange={(value) => {
-            setLocalLicenseKey(value);
-          }}
-        />
-        <Button
-          disabled={isChecking}
-          onClick={async () => {
-            updateSetting("plusLicenseKey", localLicenseKey);
-            setIsChecking(true);
-            const result = await checkIsPlusUser();
-            setIsChecking(false);
-            if (!result) {
-              setError("Invalid license key");
-            } else {
-              setError(null);
-              new CopilotPlusWelcomeModal(app).open();
-            }
-          }}
-          className="min-w-20"
-        >
-          {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-        </Button>
+        {/* PasswordInput for license key is removed as plusLicenseKey is removed from settings */}
+        {/* The "Apply" button's main purpose was to validate and save the license key. */}
+        {/* Now, Plus status is checked via checkIsPlusUser, which might depend on other settings like braveSearchApiKey. */}
+        {/* We can keep a button to manually re-check/refresh the Plus status if needed, or simplify further. */}
+        {!isPlusUser && (
+          <Button
+            disabled={isChecking}
+            onClick={async () => {
+              // updateSetting("plusLicenseKey", localLicenseKey); // Removed
+              setIsChecking(true);
+              const result = await checkIsPlusUser(); // This will update isPlusUser based on braveSearchApiKey
+              setIsChecking(false);
+              if (!result) {
+                setError(
+                  "Plus features could not be activated. Ensure Brave Search API key is set for web search features."
+                );
+              } else {
+                setError(null);
+                // new CopilotPlusWelcomeModal(app).open(); // Welcome modal might still be relevant
+              }
+            }}
+            className="min-w-20"
+          >
+            {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh Status"}
+          </Button>
+        )}
         <Button variant="secondary" onClick={() => navigateToPlusPage(PLUS_UTM_MEDIUMS.SETTINGS)}>
-          Join Now <ExternalLink className="size-4" />
+          Learn More <ExternalLink className="size-4" />{" "}
+          {/* Changed from "Join Now" to "Learn More" */}
         </Button>
       </div>
       <div className="text-error">{error}</div>
+      {isPlusUser && (
+        <div className="text-sm text-muted">
+          Plus features (like web search via Brave) are active based on your API key configurations.
+        </div>
+      )}
+      {!isPlusUser && !isChecking && (
+        <div className="text-sm text-muted">
+          To enable Plus features like web search, configure your Brave Search API key in the API
+          Keys section.
+        </div>
+      )}
     </section>
   );
 }

@@ -8,21 +8,21 @@ import {
   EmbeddingModels,
   PlusUtmMedium,
 } from "@/constants";
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+// import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import VectorStoreManager from "@/search/vectorStoreManager";
 import { getSettings, setSettings, updateSetting, useSettingsValue } from "@/settings/model";
 
-export const DEFAULT_COPILOT_PLUS_CHAT_MODEL = ChatModels.COPILOT_PLUS_FLASH;
-export const DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY =
-  DEFAULT_COPILOT_PLUS_CHAT_MODEL + "|" + ChatModelProviders.COPILOT_PLUS;
-export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL = EmbeddingModels.COPILOT_PLUS_SMALL;
-export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY =
-  DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL + "|" + EmbeddingModelProviders.COPILOT_PLUS;
+// export const DEFAULT_COPILOT_PLUS_CHAT_MODEL = ChatModels.COPILOT_PLUS_FLASH; // Removed
+// export const DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY = // Removed
+//   DEFAULT_COPILOT_PLUS_CHAT_MODEL + "|" + ChatModelProviders.COPILOT_PLUS; // Removed
+// export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL = EmbeddingModels.COPILOT_PLUS_SMALL; // Removed
+// export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY = // Removed
+//   DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL + "|" + EmbeddingModelProviders.COPILOT_PLUS; // Removed
 
 /** Check if the model key is a Copilot Plus model. */
-export function isPlusModel(modelKey: string): boolean {
-  return modelKey.split("|")[1] === EmbeddingModelProviders.COPILOT_PLUS;
-}
+// export function isPlusModel(modelKey: string): boolean { // Removed
+//   return modelKey.split("|")[1] === EmbeddingModelProviders.COPILOT_PLUS;
+// }
 
 /** Hook to get the isPlusUser setting. */
 export function useIsPlusUser(): boolean | undefined {
@@ -32,19 +32,23 @@ export function useIsPlusUser(): boolean | undefined {
 
 /** Check if the user is a Plus user. */
 export async function checkIsPlusUser(): Promise<boolean | undefined> {
-  const brevilabsClient = BrevilabsClient.getInstance();
-  const result = await brevilabsClient.validateLicenseKey();
-  return result.isValid;
+  // const brevilabsClient = BrevilabsClient.getInstance(); // BrevilabsClient is no longer used
+  // const result = await brevilabsClient.validateLicenseKey();
+  // return result.isValid;
+  // Placeholder: Determine "Plus" status based on Brave API key or other criteria
+  return !!getSettings().braveSearchApiKey;
 }
 
 /** Check if the user is on the believer plan. */
 export async function isBelieverPlan(): Promise<boolean> {
-  if (!getSettings().plusLicenseKey) {
-    return false;
-  }
-  const brevilabsClient = BrevilabsClient.getInstance();
-  const result = await brevilabsClient.validateLicenseKey();
-  return result.plan?.toLowerCase() === "believer";
+  // if (!getSettings().plusLicenseKey) { // This was for Brevilabs
+  //   return false;
+  // }
+  // const brevilabsClient = BrevilabsClient.getInstance(); // BrevilabsClient is no longer used
+  // const result = await brevilabsClient.validateLicenseKey();
+  // return result.plan?.toLowerCase() === "believer";
+  // Placeholder: Believer plan logic might need to be re-evaluated or removed
+  return false; // Defaulting to false as Brevilabs is removed
 }
 
 /**
@@ -53,9 +57,13 @@ export async function isBelieverPlan(): Promise<boolean> {
  * with caution.
  */
 export function applyPlusSettings(): void {
-  const defaultModelKey = DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY;
-  const embeddingModelKey = DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY;
+  // const defaultModelKey = DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY; // Removed
+  // const embeddingModelKey = DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY; // Removed
   const previousEmbeddingModelKey = getSettings().embeddingModelKey;
+  // Fallback to a default OpenAI model if Plus models are removed
+  const defaultModelKey = ChatModels.GPT_41 + "|" + ChatModelProviders.OPENAI;
+  const embeddingModelKey =
+    EmbeddingModels.OPENAI_EMBEDDING_SMALL + "|" + EmbeddingModelProviders.OPENAI;
   setModelKey(defaultModelKey);
   setChainType(ChainType.COPILOT_PLUS_CHAIN);
   setSettings({

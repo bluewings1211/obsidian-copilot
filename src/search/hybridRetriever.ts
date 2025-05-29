@@ -1,4 +1,4 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+// import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import ChatModelManager from "@/LLMProviders/chatModelManager";
 import EmbeddingManager from "@/LLMProviders/embeddingManager";
 import { logInfo } from "@/logger";
@@ -89,20 +89,24 @@ export class HybridRetriever extends BaseRetriever {
       (maxOramaScore < this.options.useRerankerThreshold || allScoresAreNaN);
     // Apply reranking if max score is below the threshold or all scores are NaN
     if (shouldRerank) {
-      const rerankResponse = await BrevilabsClient.getInstance().rerank(
-        query,
-        // Limit the context length to 3000 characters to avoid overflowing the reranker
-        combinedChunks.map((doc) => doc.pageContent.slice(0, 3000))
-      );
+      // const rerankResponse = await BrevilabsClient.getInstance().rerank( // BrevilabsClient is no longer used
+      //   query,
+      //   // Limit the context length to 3000 characters to avoid overflowing the reranker
+      //   combinedChunks.map((doc) => doc.pageContent.slice(0, 3000))
+      // );
 
-      // Map chunks based on reranked scores and include rerank_score in metadata
-      finalChunks = rerankResponse.response.data.map((item) => ({
-        ...combinedChunks[item.index],
-        metadata: {
-          ...combinedChunks[item.index].metadata,
-          rerank_score: item.relevance_score,
-        },
-      }));
+      // // Map chunks based on reranked scores and include rerank_score in metadata
+      // finalChunks = rerankResponse.response.data.map((item: any) => ({ // Added type for item
+      //   ...combinedChunks[item.index],
+      //   metadata: {
+      //     ...combinedChunks[item.index].metadata,
+      //     rerank_score: item.relevance_score,
+      //   },
+      // }));
+      console.warn(
+        "Reranking via BrevilabsClient is no longer available. Returning combined chunks."
+      );
+      finalChunks = combinedChunks; // Fallback to combinedChunks if reranking is skipped
     }
 
     if (getSettings().debug) {

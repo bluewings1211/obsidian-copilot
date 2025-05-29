@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CustomModel } from "@/aiParams";
-import { BREVILABS_API_BASE_URL, EmbeddingModelProviders } from "@/constants";
+import { EmbeddingModelProviders } from "@/constants"; // BREVILABS_API_BASE_URL removed
 import { getDecryptedKey } from "@/encryptionService";
 import { CustomError } from "@/error";
 import { getModelKeyFromModel, getSettings, subscribeToSettingsChange } from "@/settings/model";
@@ -12,13 +12,13 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { OllamaEmbeddings } from "@langchain/ollama";
 import { AzureOpenAIEmbeddings, OpenAIEmbeddings } from "@langchain/openai";
 import { Notice } from "obsidian";
-import { CustomJinaEmbeddings } from "./CustomJinaEmbeddings";
+// import { CustomJinaEmbeddings } from "./CustomJinaEmbeddings"; // Removed as COPILOT_PLUS_JINA provider is removed
 
 type EmbeddingConstructorType = new (config: any) => Embeddings;
 
 const EMBEDDING_PROVIDER_CONSTRUCTORS = {
-  [EmbeddingModelProviders.COPILOT_PLUS]: OpenAIEmbeddings,
-  [EmbeddingModelProviders.COPILOT_PLUS_JINA]: CustomJinaEmbeddings,
+  // [EmbeddingModelProviders.COPILOT_PLUS]: OpenAIEmbeddings, // Removed
+  // [EmbeddingModelProviders.COPILOT_PLUS_JINA]: CustomJinaEmbeddings, // Removed
   [EmbeddingModelProviders.OPENAI]: OpenAIEmbeddings,
   [EmbeddingModelProviders.COHEREAI]: CohereEmbeddings,
   [EmbeddingModelProviders.GOOGLE]: GoogleGenerativeAIEmbeddings,
@@ -44,8 +44,8 @@ export default class EmbeddingManager {
   >;
 
   private readonly providerApiKeyMap: Record<EmbeddingModelProviders, () => string> = {
-    [EmbeddingModelProviders.COPILOT_PLUS]: () => getSettings().plusLicenseKey,
-    [EmbeddingModelProviders.COPILOT_PLUS_JINA]: () => getSettings().plusLicenseKey,
+    // [EmbeddingModelProviders.COPILOT_PLUS]: () => getSettings().plusLicenseKey, // Removed
+    // [EmbeddingModelProviders.COPILOT_PLUS_JINA]: () => getSettings().plusLicenseKey, // Removed
     [EmbeddingModelProviders.OPENAI]: () => getSettings().openAIApiKey,
     [EmbeddingModelProviders.COHEREAI]: () => getSettings().cohereApiKey,
     [EmbeddingModelProviders.GOOGLE]: () => getSettings().googleApiKey,
@@ -203,27 +203,27 @@ export default class EmbeddingManager {
         ConstructorParameters<EmbeddingProviderConstructorMap[K]>[0]
       >;
     } = {
-      [EmbeddingModelProviders.COPILOT_PLUS]: {
-        modelName,
-        apiKey: await getDecryptedKey(settings.plusLicenseKey),
-        timeout: 10000,
-        batchSize: getSettings().embeddingBatchSize,
-        configuration: {
-          baseURL: BREVILABS_API_BASE_URL,
-          fetch: customModel.enableCors ? safeFetch : undefined,
-        },
-      },
-      [EmbeddingModelProviders.COPILOT_PLUS_JINA]: {
-        model: modelName,
-        apiKey: await getDecryptedKey(settings.plusLicenseKey),
-        timeout: 10000,
-        batchSize: getSettings().embeddingBatchSize,
-        dimensions: customModel.dimensions,
-        baseUrl: BREVILABS_API_BASE_URL + "/embeddings",
-        configuration: {
-          fetch: customModel.enableCors ? safeFetch : undefined,
-        },
-      },
+      // [EmbeddingModelProviders.COPILOT_PLUS]: { // Removed
+      //   modelName,
+      //   apiKey: "",
+      //   timeout: 10000,
+      //   batchSize: getSettings().embeddingBatchSize,
+      //   configuration: {
+      //     baseURL: BREVILABS_API_BASE_URL,
+      //     fetch: customModel.enableCors ? safeFetch : undefined,
+      //   },
+      // },
+      // [EmbeddingModelProviders.COPILOT_PLUS_JINA]: { // Removed
+      //   model: modelName,
+      //   apiKey: "",
+      //   timeout: 10000,
+      //   batchSize: getSettings().embeddingBatchSize,
+      //   dimensions: customModel.dimensions,
+      //   baseUrl: BREVILABS_API_BASE_URL + "/embeddings",
+      //   configuration: {
+      //     fetch: customModel.enableCors ? safeFetch : undefined,
+      //   },
+      // },
       [EmbeddingModelProviders.OPENAI]: {
         modelName,
         apiKey: await getDecryptedKey(customModel.apiKey || settings.openAIApiKey),

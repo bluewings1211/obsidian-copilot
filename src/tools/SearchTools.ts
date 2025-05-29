@@ -5,12 +5,12 @@ import {
   TEXT_WEIGHT,
 } from "@/constants";
 import { CustomError } from "@/error";
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
 import { HybridRetriever } from "@/search/hybridRetriever";
 import VectorStoreManager from "@/search/vectorStoreManager";
 import { getSettings } from "@/settings/model";
 import { TimeInfo } from "@/tools/TimeTools";
 import { tool } from "@langchain/core/tools";
+import { requestUrl } from "obsidian";
 import { z } from "zod";
 
 const localSearchTool = tool(
@@ -119,24 +119,54 @@ const indexTool = tool(
 const webSearchTool = tool(
   async ({ query, chatHistory }: { query: string; chatHistory: [string, string][] }) => {
     try {
+      const settings = getSettings();
+      if (!settings.braveSearchApiKey) {
+        console.error("Brave Search API key not found.");
+        return "Brave Search API key not configured. Please add it in the settings.";
+      }
+
       // Get standalone question considering chat history
       const standaloneQuestion = await getStandaloneQuestion(query, chatHistory);
 
-      const response = await BrevilabsClient.getInstance().webSearch(standaloneQuestion);
-      const citations = response.response.citations || [];
-      const citationsList =
-        citations.length > 0
-          ? "\n\nSources:\n" + citations.map((url, index) => `[${index + 1}] ${url}`).join("\n")
-          : "";
+      const response = await requestUrl({
+        url: `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(
+          standaloneQuestion
+        )}`,
+        method: "GET",
+        headers: {
+          "X-Subscription-Token": settings.braveSearchApiKey,
+          Accept: "application/json",
+        },
+      });
+
+      if (response.status !== 200) {
+        console.error("Brave Search API error:", response.json);
+        return `Error fetching search results: ${response.status}`;
+      }
+
+      const searchResults = response.json;
+      let formattedResults = "";
+      const sources: string[] = [];
+
+      if (searchResults.web && searchResults.web.results) {
+        searchResults.web.results.forEach((result: any, index: number) => {
+          formattedResults += `[${index + 1}] ${result.title}\n${result.description}\nURL: ${
+            result.url
+          }\n\n`;
+          sources.push(`[${index + 1}] [${result.title || result.url}](${result.url})`);
+        });
+      }
+
+      const citationsList = sources.length > 0 ? "\n\n#### Sources\n" + sources.join("\n") : "";
 
       return (
         "Here are the web search results. Please provide a response based on this information and include source citations listed at the end of your response under the heading '#### Sources' as a list of markdown links. For each URL, create a descriptive title based on the domain and path and return it in the markdown format '- [title](url)':\n\n" +
-        response.response.choices[0].message.content +
+        formattedResults +
         citationsList
       );
     } catch (error) {
       console.error(`Error processing web search query ${query}:`, error);
-      return "";
+      return `Error processing web search: ${error.message}`;
     }
   },
   {

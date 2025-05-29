@@ -13,7 +13,7 @@ import {
   ImageProcessingResult,
   MessageContent,
 } from "@/imageProcessing/imageProcessor";
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+// import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import { logInfo } from "@/logger";
 import { getSettings, getSystemPrompt } from "@/settings/model";
 import { ChatMessage } from "@/sharedState";
@@ -504,17 +504,18 @@ class CopilotPlusChainRunner extends BaseChainRunner {
           "Transcript not available. Only videos with the auto transcript option turned on are supported at the moment.";
         if (url) {
           try {
-            const response = await BrevilabsClient.getInstance().youtube4llm(url);
-            if (response.response.transcript) {
-              return this.handleResponse(
-                response.response.transcript,
-                userMessage,
-                abortController,
-                addMessage,
-                updateCurrentAiMessage,
-                debug
-              );
-            }
+            // const response = await BrevilabsClient.getInstance().youtube4llm(url); // BrevilabsClient is no longer used
+            // if (response?.response?.transcript) { // Added null check for response
+            //   return this.handleResponse(
+            //     response.response.transcript,
+            //     userMessage,
+            //     abortController,
+            //     addMessage,
+            //     updateCurrentAiMessage,
+            //     debug
+            //   );
+            // }
+            console.warn("YouTube transcript fetching via BrevilabsClient is no longer available.");
             return this.handleResponse(
               failMessage,
               userMessage,

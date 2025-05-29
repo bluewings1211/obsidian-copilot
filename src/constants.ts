@@ -77,7 +77,7 @@ export enum ChatModelProviders {
   GROQ = "groq",
   OLLAMA = "ollama",
   LM_STUDIO = "lm-studio",
-  COPILOT_PLUS = "copilot-plus",
+  // COPILOT_PLUS = "copilot-plus", // Removed as BrevilabsClient is removed
   MISTRAL = "mistralai",
   DEEPSEEK = "deepseek",
 }
@@ -95,15 +95,15 @@ export const MODEL_CAPABILITIES: Record<ModelCapability, string> = {
 };
 
 export const BUILTIN_CHAT_MODELS: CustomModel[] = [
-  {
-    name: ChatModels.COPILOT_PLUS_FLASH,
-    provider: ChatModelProviders.COPILOT_PLUS,
-    enabled: true,
-    isBuiltIn: true,
-    core: true,
-    plusExclusive: true,
-    capabilities: [ModelCapability.VISION],
-  },
+  // { // Removed COPILOT_PLUS_FLASH model
+  //   name: ChatModels.COPILOT_PLUS_FLASH,
+  //   provider: ChatModelProviders.COPILOT_PLUS,
+  //   enabled: true,
+  //   isBuiltIn: true,
+  //   core: true,
+  //   plusExclusive: true,
+  //   capabilities: [ModelCapability.VISION],
+  // },
   {
     name: ChatModels.GPT_41,
     provider: ChatModelProviders.OPENAI,
@@ -217,8 +217,8 @@ export enum EmbeddingModelProviders {
   OLLAMA = "ollama",
   LM_STUDIO = "lm-studio",
   OPENAI_FORMAT = "3rd party (openai-format)",
-  COPILOT_PLUS = "copilot-plus",
-  COPILOT_PLUS_JINA = "copilot-plus-jina",
+  // COPILOT_PLUS = "copilot-plus", // Removed as BrevilabsClient is removed
+  // COPILOT_PLUS_JINA = "copilot-plus-jina", // Removed as BrevilabsClient is removed
 }
 
 export enum EmbeddingModels {
@@ -228,42 +228,42 @@ export enum EmbeddingModels {
   AZURE_OPENAI = "azure-openai",
   COHEREAI_EMBED_MULTILINGUAL_LIGHT_V3_0 = "embed-multilingual-light-v3.0",
   GOOGLE_ENG = "text-embedding-004",
-  COPILOT_PLUS_SMALL = "copilot-plus-small",
-  COPILOT_PLUS_LARGE = "copilot-plus-large",
-  COPILOT_PLUS_MULTILINGUAL = "copilot-plus-multilingual",
+  // COPILOT_PLUS_SMALL = "copilot-plus-small", // Removed as BrevilabsClient is removed
+  // COPILOT_PLUS_LARGE = "copilot-plus-large", // Removed as BrevilabsClient is removed
+  // COPILOT_PLUS_MULTILINGUAL = "copilot-plus-multilingual", // Removed as BrevilabsClient is removed
 }
 
 export const BUILTIN_EMBEDDING_MODELS: CustomModel[] = [
-  {
-    name: EmbeddingModels.COPILOT_PLUS_SMALL,
-    provider: EmbeddingModelProviders.COPILOT_PLUS,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-  },
-  {
-    name: EmbeddingModels.COPILOT_PLUS_LARGE,
-    provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-    believerExclusive: true,
-    dimensions: 1024,
-  },
-  {
-    name: EmbeddingModels.COPILOT_PLUS_MULTILINGUAL,
-    provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-    dimensions: 512,
-  },
+  // {
+  //   name: EmbeddingModels.COPILOT_PLUS_SMALL,
+  //   provider: EmbeddingModelProviders.COPILOT_PLUS,
+  //   enabled: true,
+  //   isBuiltIn: true,
+  //   isEmbeddingModel: true,
+  //   core: true,
+  //   plusExclusive: true,
+  // },
+  // {
+  //   name: EmbeddingModels.COPILOT_PLUS_LARGE,
+  //   provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
+  //   enabled: true,
+  //   isBuiltIn: true,
+  //   isEmbeddingModel: true,
+  //   core: true,
+  //   plusExclusive: true,
+  //   believerExclusive: true,
+  //   dimensions: 1024,
+  // },
+  // {
+  //   name: EmbeddingModels.COPILOT_PLUS_MULTILINGUAL,
+  //   provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
+  //   enabled: true,
+  //   isBuiltIn: true,
+  //   isEmbeddingModel: true,
+  //   core: true,
+  //   plusExclusive: true,
+  //   dimensions: 512,
+  // },
   {
     name: EmbeddingModels.OPENAI_EMBEDDING_SMALL,
     provider: EmbeddingModelProviders.OPENAI,
@@ -313,6 +313,7 @@ export type Provider = ChatModelProviders | EmbeddingModelProviders;
 export type SettingKeyProviders = Exclude<
   ChatModelProviders,
   ChatModelProviders.OPENAI_FORMAT | ChatModelProviders.LM_STUDIO | ChatModelProviders.OLLAMA
+  // | ChatModelProviders.COPILOT_PLUS // Already removed from ChatModelProviders enum
 >;
 
 // Provider metadata interface
@@ -400,16 +401,22 @@ export const ProviderInfo: Record<Provider, ProviderMetadata> = {
     keyManagementURL: "https://platform.deepseek.com/api-keys",
     testModel: ChatModels.DEEPSEEK_CHAT,
   },
-  [EmbeddingModelProviders.COPILOT_PLUS]: {
-    label: "Copilot Plus",
-    host: "https://api.brevilabs.com/v1",
-    keyManagementURL: "",
-  },
-  [EmbeddingModelProviders.COPILOT_PLUS_JINA]: {
-    label: "Copilot Plus",
-    host: "https://api.brevilabs.com/v1",
-    keyManagementURL: "",
-  },
+  // [ChatModelProviders.COPILOT_PLUS]: { // Removed COPILOT_PLUS from ProviderInfo
+  //   label: "Copilot Plus",
+  //   host: "https://api.brevilabs.com/v1", // This was Brevilabs
+  //   keyManagementURL: "",
+  //   // testModel: ChatModels.COPILOT_PLUS_FLASH, // This model is also removed
+  // },
+  // [EmbeddingModelProviders.COPILOT_PLUS]: { // Removed as BrevilabsClient is removed
+  //   label: "Copilot Plus",
+  //   host: "https://api.brevilabs.com/v1",
+  //   keyManagementURL: "",
+  // },
+  // [EmbeddingModelProviders.COPILOT_PLUS_JINA]: { // Removed as BrevilabsClient is removed
+  //   label: "Copilot Plus",
+  //   host: "https://api.brevilabs.com/v1",
+  //   keyManagementURL: "",
+  // },
 };
 
 // Map provider to its settings key for API key
@@ -422,7 +429,7 @@ export const ProviderSettingsKeyMap: Record<SettingKeyProviders, keyof CopilotSe
   openrouterai: "openRouterAiApiKey",
   cohereai: "cohereApiKey",
   xai: "xaiApiKey",
-  "copilot-plus": "plusLicenseKey",
+  // "copilot-plus": "plusLicenseKey", // Removed Plus provider key mapping
   mistralai: "mistralApiKey",
   deepseek: "deepseekApiKey",
 };
@@ -495,8 +502,8 @@ export type CommandId = (typeof COMMAND_IDS)[keyof typeof COMMAND_IDS];
 
 export const DEFAULT_SETTINGS: CopilotSettings = {
   userId: uuidv4(),
-  isPlusUser: false,
-  plusLicenseKey: "",
+  isPlusUser: false, // This might be determined by braveSearchApiKey now
+  // plusLicenseKey: "", // Removed as BrevilabsClient is removed
   openAIApiKey: "",
   openAIOrgId: "",
   huggingfaceApiKey: "",
@@ -512,6 +519,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   xaiApiKey: "",
   mistralApiKey: "",
   deepseekApiKey: "",
+  braveSearchApiKey: "",
   defaultChainType: ChainType.LLM_CHAIN,
   defaultModelKey: ChatModels.GPT_41 + "|" + ChatModelProviders.OPENAI,
   embeddingModelKey: EmbeddingModels.OPENAI_EMBEDDING_SMALL + "|" + EmbeddingModelProviders.OPENAI,

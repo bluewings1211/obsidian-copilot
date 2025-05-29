@@ -1,4 +1,4 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+// import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import { PDFCache } from "@/cache/pdfCache";
 import { logError, logInfo } from "@/logger";
 import { TFile, Vault } from "obsidian";
@@ -19,11 +19,12 @@ export class MarkdownParser implements FileParser {
 
 export class PDFParser implements FileParser {
   supportedExtensions = ["pdf"];
-  private brevilabsClient: BrevilabsClient;
+  // private brevilabsClient: BrevilabsClient; // BrevilabsClient is no longer used
   private pdfCache: PDFCache;
 
-  constructor(brevilabsClient: BrevilabsClient) {
-    this.brevilabsClient = brevilabsClient;
+  constructor() {
+    // Removed brevilabsClient from constructor
+    // this.brevilabsClient = brevilabsClient;
     this.pdfCache = PDFCache.getInstance();
   }
 
@@ -32,18 +33,19 @@ export class PDFParser implements FileParser {
       logInfo("Parsing PDF file:", file.path);
 
       // Try to get from cache first
-      const cachedResponse = await this.pdfCache.get(file);
-      if (cachedResponse) {
-        logInfo("Using cached PDF content for:", file.path);
-        return cachedResponse.response;
-      }
+      // const cachedResponse = await this.pdfCache.get(file); // Caching might be less relevant if direct parsing fails
+      // if (cachedResponse) {
+      //   logInfo("Using cached PDF content for:", file.path);
+      //   return cachedResponse.response;
+      // }
 
       // If not in cache, read the file and call the API
-      const binaryContent = await vault.readBinary(file);
-      logInfo("Calling pdf4llm API for:", file.path);
-      const pdf4llmResponse = await this.brevilabsClient.pdf4llm(binaryContent);
-      await this.pdfCache.set(file, pdf4llmResponse);
-      return pdf4llmResponse.response;
+      // const binaryContent = await vault.readBinary(file);
+      // logInfo("Calling pdf4llm API for:", file.path); // pdf4llm is no longer available
+      // const pdf4llmResponse = await this.brevilabsClient.pdf4llm(binaryContent);
+      // await this.pdfCache.set(file, pdf4llmResponse);
+      // return pdf4llmResponse.response;
+      return `[Error: PDF parsing via BrevilabsClient (pdf4llm) is no longer available. File: ${file.basename}]`;
     } catch (error) {
       logError(`Error extracting content from PDF ${file.path}:`, error);
       return `[Error: Could not extract content from PDF ${file.basename}]`;
@@ -88,10 +90,11 @@ class DocxParser implements FileParser {
 export class FileParserManager {
   private parsers: Map<string, FileParser> = new Map();
 
-  constructor(brevilabsClient: BrevilabsClient, vault: Vault) {
+  constructor(vault: Vault) {
+    // Removed brevilabsClient from constructor
     // Register parsers
     this.registerParser(new MarkdownParser());
-    this.registerParser(new PDFParser(brevilabsClient));
+    this.registerParser(new PDFParser()); // Initialize PDFParser without brevilabsClient
     this.registerParser(new CanvasParser());
   }
 

@@ -1,10 +1,10 @@
-import { BREVILABS_API_BASE_URL } from "@/constants";
-import { getDecryptedKey } from "@/encryptionService";
-import { logInfo } from "@/logger";
-import { turnOffPlus, turnOnPlus } from "@/plusUtils";
-import { getSettings } from "@/settings/model";
-import { Buffer } from "buffer";
-import { Notice } from "obsidian";
+// import { BREVILABS_API_BASE_URL } from "@/constants";
+// import { getDecryptedKey } from "@/encryptionService";
+// import { logInfo } from "@/logger";
+// import { turnOffPlus, turnOnPlus } from "@/plusUtils";
+// import { getSettings } from "@/settings/model";
+// import { Buffer } from "buffer";
+// import { Notice } from "obsidian";
 
 export interface BrocaResponse {
   response: {
@@ -71,14 +71,14 @@ export interface Youtube4llmResponse {
   elapsed_time_ms: number;
 }
 
-interface LicenseResponse {
-  is_valid: boolean;
-  plan: string;
-}
+// interface LicenseResponse {
+//   is_valid: boolean;
+//   plan: string;
+// }
 
 export class BrevilabsClient {
   private static instance: BrevilabsClient;
-  private pluginVersion: string = "Unknown";
+  // private pluginVersion: string = "Unknown";
 
   static getInstance(): BrevilabsClient {
     if (!BrevilabsClient.instance) {
@@ -87,66 +87,66 @@ export class BrevilabsClient {
     return BrevilabsClient.instance;
   }
 
-  private checkLicenseKey() {
-    if (!getSettings().plusLicenseKey) {
-      new Notice(
-        "Copilot Plus license key not found. Please enter your license key in the settings."
-      );
-      throw new Error("License key not initialized");
-    }
-  }
+  // private checkLicenseKey() {
+  //   if (!getSettings().plusLicenseKey) {
+  //     new Notice(
+  //       "Copilot Plus license key not found. Please enter your license key in the settings."
+  //     );
+  //     throw new Error("License key not initialized");
+  //   }
+  // }
 
   setPluginVersion(pluginVersion: string) {
-    this.pluginVersion = pluginVersion;
+    // this.pluginVersion = pluginVersion;
   }
 
-  private async makeRequest<T>(
-    endpoint: string,
-    body: any,
-    method = "POST",
-    excludeAuthHeader = false,
-    skipLicenseCheck = false
-  ): Promise<{ data: T | null; error?: Error }> {
-    if (!skipLicenseCheck) {
-      this.checkLicenseKey();
-    }
+  // private async makeRequest<T>(
+  //   endpoint: string,
+  //   body: any,
+  //   method = "POST",
+  //   excludeAuthHeader = false,
+  //   skipLicenseCheck = false
+  // ): Promise<{ data: T | null; error?: Error }> {
+  //   if (!skipLicenseCheck) {
+  //     this.checkLicenseKey();
+  //   }
 
-    body.user_id = getSettings().userId;
+  //   body.user_id = getSettings().userId;
 
-    const url = new URL(`${BREVILABS_API_BASE_URL}${endpoint}`);
-    if (method === "GET") {
-      // Add query parameters for GET requests
-      Object.entries(body).forEach(([key, value]) => {
-        url.searchParams.append(key, value as string);
-      });
-    }
+  //   const url = new URL(`${BREVILABS_API_BASE_URL}${endpoint}`);
+  //   if (method === "GET") {
+  //     // Add query parameters for GET requests
+  //     Object.entries(body).forEach(([key, value]) => {
+  //       url.searchParams.append(key, value as string);
+  //     });
+  //   }
 
-    const response = await fetch(url.toString(), {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(!excludeAuthHeader && {
-          Authorization: `Bearer ${await getDecryptedKey(getSettings().plusLicenseKey)}`,
-        }),
-        "X-Client-Version": this.pluginVersion,
-      },
-      ...(method === "POST" && { body: JSON.stringify(body) }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      try {
-        const errorDetail = data.detail;
-        const error = new Error(errorDetail.reason);
-        error.name = errorDetail.error;
-        return { data: null, error };
-      } catch {
-        return { data: null, error: new Error("Unknown error") };
-      }
-    }
-    logInfo(`==== ${endpoint} request ====:`, data);
+  //   const response = await fetch(url.toString(), {
+  //     method,
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       ...(!excludeAuthHeader && {
+  //         Authorization: `Bearer ${await getDecryptedKey(getSettings().plusLicenseKey)}`,
+  //       }),
+  //       "X-Client-Version": this.pluginVersion,
+  //     },
+  //     ...(method === "POST" && { body: JSON.stringify(body) }),
+  //   });
+  //   const data = await response.json();
+  //   if (!response.ok) {
+  //     try {
+  //       const errorDetail = data.detail;
+  //       const error = new Error(errorDetail.reason);
+  //       error.name = errorDetail.error;
+  //       return { data: null, error };
+  //     } catch {
+  //       return { data: null, error: new Error("Unknown error") };
+  //     }
+  //   }
+  //   logInfo(`==== ${endpoint} request ====:`, data);
 
-    return { data };
-  }
+  //   return { data };
+  // }
 
   /**
    * Validate the license key and update the isPlusUser setting.
@@ -154,107 +154,117 @@ export class BrevilabsClient {
    * unknown error.
    */
   async validateLicenseKey(): Promise<{ isValid: boolean | undefined; plan?: string }> {
-    const { data, error } = await this.makeRequest<LicenseResponse>(
-      "/license",
-      {
-        license_key: await getDecryptedKey(getSettings().plusLicenseKey),
-      },
-      "POST",
-      true,
-      true
-    );
-    if (error) {
-      if (error.message === "Invalid license key") {
-        turnOffPlus();
-        return { isValid: false };
-      }
-      // Do nothing if the error is not about the invalid license key
-      return { isValid: undefined };
-    }
-    turnOnPlus();
-    return { isValid: true, plan: data?.plan };
+    // const { data, error } = await this.makeRequest<LicenseResponse>(
+    //   "/license",
+    //   {
+    //     license_key: await getDecryptedKey(getSettings().plusLicenseKey),
+    //   },
+    //   "POST",
+    //   true,
+    //   true
+    // );
+    // if (error) {
+    //   if (error.message === "Invalid license key") {
+    //     turnOffPlus();
+    //     return { isValid: false };
+    //   }
+    //   // Do nothing if the error is not about the invalid license key
+    //   return { isValid: undefined };
+    // }
+    // turnOnPlus();
+    // return { isValid: true, plan: data?.plan };
+    return { isValid: true, plan: "brave_search_enabled" }; // Placeholder
   }
 
   async broca(userMessage: string): Promise<BrocaResponse> {
-    const { data, error } = await this.makeRequest<BrocaResponse>("/broca", {
-      message: userMessage,
-    });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from broca");
-    }
+    // const { data, error } = await this.makeRequest<BrocaResponse>("/broca", {
+    //   message: userMessage,
+    // });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from broca");
+    // }
 
-    return data;
+    // return data;
+    throw new Error("BrevilabsClient.broca is no longer available.");
   }
 
   async rerank(query: string, documents: string[]): Promise<RerankResponse> {
-    const { data, error } = await this.makeRequest<RerankResponse>("/rerank", {
-      query,
-      documents,
-      model: "rerank-2",
-    });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from rerank");
-    }
+    // const { data, error } = await this.makeRequest<RerankResponse>("/rerank", {
+    //   query,
+    //   documents,
+    //   model: "rerank-2",
+    // });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from rerank");
+    // }
 
-    return data;
+    // return data;
+    throw new Error("BrevilabsClient.rerank is no longer available.");
   }
 
   async url4llm(url: string): Promise<Url4llmResponse> {
-    const { data, error } = await this.makeRequest<Url4llmResponse>("/url4llm", { url });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from url4llm");
-    }
+    // const { data, error } = await this.makeRequest<Url4llmResponse>("/url4llm", { url });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from url4llm");
+    // }
 
-    return data;
+    // return data;
+    throw new Error("BrevilabsClient.url4llm is no longer available.");
   }
 
   async pdf4llm(binaryContent: ArrayBuffer): Promise<Pdf4llmResponse> {
-    // Convert ArrayBuffer to base64 string
-    const base64Content = Buffer.from(binaryContent).toString("base64");
+    // // Convert ArrayBuffer to base64 string
+    // const base64Content = Buffer.from(binaryContent).toString("base64");
 
-    const { data, error } = await this.makeRequest<Pdf4llmResponse>("/pdf4llm", {
-      pdf: base64Content,
-    });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from pdf4llm");
-    }
+    // const { data, error } = await this.makeRequest<Pdf4llmResponse>("/pdf4llm", {
+    //   pdf: base64Content,
+    // });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from pdf4llm");
+    // }
 
-    return data;
+    // return data;
+    throw new Error("BrevilabsClient.pdf4llm is no longer available.");
   }
 
   async webSearch(query: string): Promise<WebSearchResponse> {
-    const { data, error } = await this.makeRequest<WebSearchResponse>("/websearch", { query });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from websearch");
-    }
+    // const { data, error } = await this.makeRequest<WebSearchResponse>("/websearch", { query });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from websearch");
+    // }
 
-    return data;
+    // return data;
+    // This method is now implemented directly in SearchTools.ts using Brave Search API
+    throw new Error(
+      "BrevilabsClient.webSearch is deprecated. Use the implementation in SearchTools.ts."
+    );
   }
 
   async youtube4llm(url: string): Promise<Youtube4llmResponse> {
-    const { data, error } = await this.makeRequest<Youtube4llmResponse>("/youtube4llm", { url });
-    if (error) {
-      throw error;
-    }
-    if (!data) {
-      throw new Error("No data returned from youtube4llm");
-    }
+    // const { data, error } = await this.makeRequest<Youtube4llmResponse>("/youtube4llm", { url });
+    // if (error) {
+    //   throw error;
+    // }
+    // if (!data) {
+    //   throw new Error("No data returned from youtube4llm");
+    // }
 
-    return data;
+    // return data;
+    throw new Error("BrevilabsClient.youtube4llm is no longer available.");
   }
 }

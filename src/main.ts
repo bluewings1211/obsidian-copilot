@@ -1,4 +1,4 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+// import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import ChainManager from "@/LLMProviders/chainManager";
 import { CustomModel } from "@/aiParams";
 import { parseChatContent, updateChatMemory } from "@/chatUtils";
@@ -38,7 +38,7 @@ export default class CopilotPlugin extends Plugin {
   // Only reset when the user explicitly clicks "New Chat"
   sharedState: SharedState;
   chainManager: ChainManager;
-  brevilabsClient: BrevilabsClient;
+  // brevilabsClient: BrevilabsClient; // BrevilabsClient is no longer used
   userMessageHistory: string[] = [];
   vectorStoreManager: VectorStoreManager;
   fileParserManager: FileParserManager;
@@ -59,16 +59,16 @@ export default class CopilotPlugin extends Plugin {
     this.sharedState = new SharedState();
 
     this.vectorStoreManager = VectorStoreManager.getInstance();
+    // Initialize BrevilabsClient - No longer needed
+    // this.brevilabsClient = BrevilabsClient.getInstance();
+    // this.brevilabsClient.setPluginVersion(this.manifest.version);
 
-    // Initialize BrevilabsClient
-    this.brevilabsClient = BrevilabsClient.getInstance();
-    this.brevilabsClient.setPluginVersion(this.manifest.version);
     checkIsPlusUser();
 
     this.chainManager = new ChainManager(this.app, this.vectorStoreManager);
 
     // Initialize FileParserManager early with other core services
-    this.fileParserManager = new FileParserManager(this.brevilabsClient, this.app.vault);
+    this.fileParserManager = new FileParserManager(this.app.vault);
 
     this.registerView(CHAT_VIEWTYPE, (leaf: WorkspaceLeaf) => new CopilotView(leaf, this));
 

@@ -1,6 +1,6 @@
 import { CustomModel, getModelKey, ModelConfig, setModelKey } from "@/aiParams";
 import {
-  BREVILABS_API_BASE_URL,
+  // BREVILABS_API_BASE_URL, // Removed as COPILOT_PLUS provider is removed
   BUILTIN_CHAT_MODELS,
   ChatModelProviders,
   ProviderInfo,
@@ -38,7 +38,7 @@ const CHAT_PROVIDER_CONSTRUCTORS = {
   [ChatModelProviders.LM_STUDIO]: ChatOpenAI,
   [ChatModelProviders.GROQ]: ChatGroq,
   [ChatModelProviders.OPENAI_FORMAT]: ChatOpenAI,
-  [ChatModelProviders.COPILOT_PLUS]: ChatOpenAI,
+  // [ChatModelProviders.COPILOT_PLUS]: ChatOpenAI, // Removed as COPILOT_PLUS provider is removed
   [ChatModelProviders.MISTRAL]: ChatMistralAI,
   [ChatModelProviders.DEEPSEEK]: ChatDeepSeek,
 } as const;
@@ -69,7 +69,7 @@ export default class ChatModelManager {
     [ChatModelProviders.OLLAMA]: () => "default-key",
     [ChatModelProviders.LM_STUDIO]: () => "default-key",
     [ChatModelProviders.OPENAI_FORMAT]: () => "default-key",
-    [ChatModelProviders.COPILOT_PLUS]: () => getSettings().plusLicenseKey,
+    // [ChatModelProviders.COPILOT_PLUS]: () => getSettings().plusLicenseKey, // Removed
     [ChatModelProviders.MISTRAL]: () => getSettings().mistralApiKey,
     [ChatModelProviders.DEEPSEEK]: () => getSettings().deepseekApiKey,
   } as const;
@@ -216,14 +216,14 @@ export default class ChatModelManager {
         },
         ...this.handleOpenAIExtraArgs(isOSeries, settings.maxTokens, settings.temperature),
       },
-      [ChatModelProviders.COPILOT_PLUS]: {
-        modelName: modelName,
-        openAIApiKey: await getDecryptedKey(settings.plusLicenseKey),
-        configuration: {
-          baseURL: BREVILABS_API_BASE_URL,
-          fetch: customModel.enableCors ? safeFetch : undefined,
-        },
-      },
+      // [ChatModelProviders.COPILOT_PLUS]: { // Removed
+      //   modelName: modelName,
+      //   openAIApiKey: await getDecryptedKey(settings.plusLicenseKey),
+      //   configuration: {
+      //     baseURL: BREVILABS_API_BASE_URL,
+      //     fetch: customModel.enableCors ? safeFetch : undefined,
+      //   },
+      // },
       [ChatModelProviders.MISTRAL]: {
         model: modelName,
         apiKey: await getDecryptedKey(customModel.apiKey || settings.mistralApiKey),

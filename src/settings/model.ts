@@ -38,7 +38,7 @@ export interface InlineEditCommandSettings {
 
 export interface CopilotSettings {
   userId: string;
-  plusLicenseKey: string;
+  // plusLicenseKey: string; // Removed as BrevilabsClient is removed
   openAIApiKey: string;
   openAIOrgId: string;
   huggingfaceApiKey: string;
@@ -54,6 +54,7 @@ export interface CopilotSettings {
   xaiApiKey: string;
   mistralApiKey: string;
   deepseekApiKey: string;
+  braveSearchApiKey: string;
   defaultChainType: ChainType;
   defaultModelKey: string;
   embeddingModelKey: string;
