@@ -83,7 +83,13 @@ describe("StdioTransport", () => {
       expect(transport.state).toBe("connected");
       expect(mockSpawn).toHaveBeenCalledWith(mockConfig.command, mockConfig.args, {
         stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env, ...mockConfig.env },
+        env: expect.objectContaining({
+          TEST_ENV: "value",
+          NPM_CONFIG_FUND: "false",
+          NPM_CONFIG_AUDIT: "false",
+          NPM_CONFIG_UPDATE_NOTIFIER: "false",
+          SUPPRESS_NO_CONFIG_WARNING: "true",
+        }),
         cwd: mockConfig.cwd,
       });
     });
@@ -294,21 +300,58 @@ describe("StdioTransport", () => {
       expect(onMessageSpy).toHaveBeenCalledWith(message2);
     });
 
-    it("should handle invalid JSON gracefully", () => {
+    it("should handle npm funding messages gracefully", () => {
+      const consoleSpy = jest.spyOn(console, "debug").mockImplementation();
+      const onErrorSpy = jest.fn();
+      transport.onerror = onErrorSpy;
+
+      // Send npm funding message
+      mockChildProcess.stdout!.emit("data", Buffer.from("8 packages are looking for funding\n"));
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[MCP Server] Info: 8 packages are looking for funding"
+      );
+      expect(onErrorSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle other npm messages gracefully", () => {
+      const consoleSpy = jest.spyOn(console, "debug").mockImplementation();
+      const onErrorSpy = jest.fn();
+      transport.onerror = onErrorSpy;
+
+      // Send various npm messages
+      mockChildProcess.stdout!.emit("data", Buffer.from("npm notice New version available\n"));
+      mockChildProcess.stdout!.emit("data", Buffer.from("added 42 packages in 2s\n"));
+      mockChildProcess.stdout!.emit("data", Buffer.from("found 0 vulnerabilities\n"));
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[MCP Server] Info: npm notice New version available"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith("[MCP Server] Info: added 42 packages in 2s");
+      expect(consoleSpy).toHaveBeenCalledWith("[MCP Server] Info: found 0 vulnerabilities");
+      expect(onErrorSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle invalid JSON with warnings", () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
       const onErrorSpy = jest.fn();
       transport.onerror = onErrorSpy;
 
       // Send invalid JSON
       mockChildProcess.stdout!.emit("data", Buffer.from("invalid json\n"));
 
-      expect(onErrorSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining("Failed to parse message"),
-        })
-      );
+      expect(consoleSpy).toHaveBeenCalledWith("[MCP Server] Failed to parse message: invalid json");
+      expect(onErrorSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
     });
 
-    it("should handle invalid JSON-RPC message", () => {
+    it("should handle invalid JSON-RPC message with warnings", () => {
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
       const onErrorSpy = jest.fn();
       transport.onerror = onErrorSpy;
 
@@ -316,11 +359,12 @@ describe("StdioTransport", () => {
       const invalidMessage = { version: "1.0", method: "test" };
       mockChildProcess.stdout!.emit("data", Buffer.from(JSON.stringify(invalidMessage) + "\n"));
 
-      expect(onErrorSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining("Invalid JSON-RPC message"),
-        })
+      expect(consoleSpy).toHaveBeenCalledWith(
+        `[MCP Server] Non-JSON-RPC message: ${JSON.stringify(invalidMessage)}`
       );
+      expect(onErrorSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
     });
 
     it("should handle stderr output", () => {
@@ -407,7 +451,12 @@ describe("StdioTransport", () => {
 
       expect(mockSpawn).toHaveBeenCalledWith("echo", [], {
         stdio: ["pipe", "pipe", "pipe"],
-        env: process.env,
+        env: expect.objectContaining({
+          NPM_CONFIG_FUND: "false",
+          NPM_CONFIG_AUDIT: "false",
+          NPM_CONFIG_UPDATE_NOTIFIER: "false",
+          SUPPRESS_NO_CONFIG_WARNING: "true",
+        }),
         cwd: undefined,
       });
 
@@ -434,7 +483,14 @@ describe("StdioTransport", () => {
 
       expect(mockSpawn).toHaveBeenCalledWith("test", [], {
         stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env, CUSTOM_VAR: "value", PATH: "/custom/path" },
+        env: expect.objectContaining({
+          CUSTOM_VAR: "value",
+          PATH: expect.stringContaining("/custom/path"),
+          NPM_CONFIG_FUND: "false",
+          NPM_CONFIG_AUDIT: "false",
+          NPM_CONFIG_UPDATE_NOTIFIER: "false",
+          SUPPRESS_NO_CONFIG_WARNING: "true",
+        }),
         cwd: undefined,
       });
 

@@ -102,37 +102,48 @@ export class IntentAnalyzer {
 
   static async analyzeIntent(originalMessage: string): Promise<ToolCall[]> {
     try {
-      const brocaResponse = await BrevilabsClient.getInstance().broca(originalMessage);
-
-      // Check if the response is successful and has the expected structure
-      if (!brocaResponse?.response) {
-        throw new Error(brocaResponse?.detail || "Broca API call failed");
-      }
-
-      const brocaToolCalls = brocaResponse.response.tool_calls;
-      const salientTerms = brocaResponse.response.salience_terms;
-
       const processedToolCalls: ToolCall[] = [];
       let timeRange: { startTime: TimeInfo; endTime: TimeInfo } | undefined;
+      let salientTerms: string[] = [];
 
-      // Get all available tools (native + MCP)
-      const allTools = await this.getAllTools();
+      // Try to use broca service if available, but gracefully fallback if not
+      try {
+        const brocaResponse = await BrevilabsClient.getInstance().broca(originalMessage);
 
-      // Process tool calls from broca
-      for (const brocaToolCall of brocaToolCalls) {
-        const tool = allTools.find((t) => t.name === brocaToolCall.tool);
-        if (tool) {
-          const args = brocaToolCall.args || {};
+        // Check if the response is successful and has the expected structure
+        if (brocaResponse?.response) {
+          const brocaToolCalls = brocaResponse.response.tool_calls;
+          salientTerms = brocaResponse.response.salience_terms || [];
 
-          if (tool.name === "getTimeRangeMs") {
-            timeRange = await ToolManager.callTool(tool, args);
+          // Get all available tools (native + MCP)
+          const allTools = await this.getAllTools();
+
+          // Process tool calls from broca
+          for (const brocaToolCall of brocaToolCalls) {
+            const tool = allTools.find((t) => t.name === brocaToolCall.tool);
+            if (tool) {
+              const args = brocaToolCall.args || {};
+
+              if (tool.name === "getTimeRangeMs") {
+                timeRange = await ToolManager.callTool(tool, args);
+              }
+
+              processedToolCalls.push({ tool, args });
+            }
           }
-
-          processedToolCalls.push({ tool, args });
         }
+      } catch (brocaError) {
+        // Broca service is not available, continue with @ command processing only
+        console.warn(
+          "Broca service unavailable, falling back to @ command processing:",
+          brocaError
+        );
+
+        // Extract basic salient terms from the message for @ command processing
+        salientTerms = this.extractBasicSalientTerms(originalMessage);
       }
 
-      // Process @ commands from original message only
+      // Process @ commands from original message
       await this.processAtCommands(originalMessage, processedToolCalls, {
         timeRange,
         salientTerms,
@@ -146,6 +157,62 @@ export class IntentAnalyzer {
       console.error("Error in intent analysis:", error);
       throw error; // Re-throw the error to be caught by CopilotPlusChainRunner
     }
+  }
+
+  /**
+   * Extract basic salient terms from message when broca is not available
+   */
+  private static extractBasicSalientTerms(message: string): string[] {
+    // Simple extraction: remove @ commands and common words, split by spaces
+    const cleanMessage = message
+      .replace(/@\w+/g, "") // Remove @ commands
+      .replace(/[^\w\s]/g, " ") // Remove punctuation
+      .toLowerCase();
+
+    const commonWords = new Set([
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "could",
+      "should",
+      "may",
+      "might",
+      "can",
+      "this",
+      "that",
+      "these",
+      "those",
+    ]);
+
+    return cleanMessage
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !commonWords.has(word))
+      .slice(0, 5); // Limit to 5 terms
   }
 
   private static async processAtCommands(

@@ -29,6 +29,8 @@ import type {
   GetPromptResult,
   McpVersion,
   LogLevel,
+  StdioTransportConfig,
+  SseTransportConfig,
 } from "./types";
 
 import {
@@ -322,11 +324,24 @@ export class McpClient extends EventEmitter {
    * Create transport instance based on configuration
    */
   private createTransport(): Transport {
+    this.log("debug", "Creating transport", {
+      type: this.config.transport,
+      connection: this.config.connection,
+    });
+
     switch (this.config.transport) {
-      case "stdio":
-        return new StdioTransport(this.config.connection as any);
-      case "sse":
-        return new SseTransport(this.config.connection as any);
+      case "stdio": {
+        // Properly type the connection config for stdio
+        const stdioConfig = this.config.connection as StdioTransportConfig;
+        this.log("debug", "Creating STDIO transport with config", stdioConfig);
+        return new StdioTransport(stdioConfig);
+      }
+      case "sse": {
+        // Properly type the connection config for SSE
+        const sseConfig = this.config.connection as SseTransportConfig;
+        this.log("debug", "Creating SSE transport with config", sseConfig);
+        return new SseTransport(sseConfig);
+      }
       default:
         throw new Error(`Unsupported transport type: ${this.config.transport}`);
     }

@@ -1,6 +1,6 @@
 import { ImageProcessor } from "@/imageProcessing/imageProcessor";
-import { BrevilabsClient, Url4llmResponse } from "@/LLMProviders/brevilabsClient";
 import { isYoutubeUrl } from "@/utils";
+import { McpManager } from "@/mcp/manager";
 
 export interface MentionData {
   type: string;
@@ -8,14 +8,18 @@ export interface MentionData {
   processed?: string;
 }
 
+export interface FetchResponse {
+  response: string;
+  elapsed_time_ms: number;
+}
+
 export class Mention {
   private static instance: Mention;
   private mentions: Map<string, MentionData>;
-  private brevilabsClient: BrevilabsClient;
+  private mcpManager?: McpManager;
 
   private constructor() {
     this.mentions = new Map();
-    this.brevilabsClient = BrevilabsClient.getInstance();
   }
 
   static getInstance(): Mention {
@@ -23,6 +27,13 @@ export class Mention {
       Mention.instance = new Mention();
     }
     return Mention.instance;
+  }
+
+  /**
+   * Set the MCP manager instance
+   */
+  setMcpManager(mcpManager: McpManager): void {
+    this.mcpManager = mcpManager;
   }
 
   extractAllUrls(text: string): string[] {
@@ -41,11 +52,50 @@ export class Mention {
       .filter((url) => !isYoutubeUrl(url));
   }
 
-  async processUrl(url: string): Promise<Url4llmResponse> {
+  async processUrl(url: string): Promise<FetchResponse> {
     try {
-      return await this.brevilabsClient.url4llm(url);
+      if (!this.mcpManager) {
+        console.warn("MCP manager not available, returning original URL");
+        return { response: url, elapsed_time_ms: 0 };
+      }
+
+      // Find the fetch server
+      const servers = this.mcpManager.getServerStatuses();
+      const fetchServer = servers.find(
+        (server) => server.name === "fetch" && server.state === "connected"
+      );
+
+      if (!fetchServer) {
+        console.warn("Fetch MCP server not available, returning original URL");
+        return { response: url, elapsed_time_ms: 0 };
+      }
+
+      const startTime = Date.now();
+
+      // Call the fetch tool
+      const result = await this.mcpManager.callTool(fetchServer.id, {
+        name: "fetch",
+        arguments: {
+          url: url,
+          max_length: 5000,
+        },
+      });
+
+      const elapsed = Date.now() - startTime;
+
+      // Extract content from the result
+      let content = url; // fallback
+      if (result.content && Array.isArray(result.content)) {
+        // Find text content in the result
+        const textContent = result.content.find((item) => item.type === "text");
+        if (textContent && textContent.text) {
+          content = textContent.text;
+        }
+      }
+
+      return { response: content, elapsed_time_ms: elapsed };
     } catch (error) {
-      console.error(`Error processing URL ${url}:`, error);
+      console.error(`Error processing URL ${url} with MCP fetch:`, error);
       return { response: url, elapsed_time_ms: 0 };
     }
   }

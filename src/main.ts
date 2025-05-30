@@ -34,6 +34,7 @@ import {
 import { IntentAnalyzer } from "./LLMProviders/intentAnalyzer";
 import { McpManager } from "@/mcp/manager";
 import { McpToolAdapterManager } from "@/mcp/tool-adapter";
+import { Mention } from "@/mentions/Mention";
 
 export default class CopilotPlugin extends Plugin {
   // A chat history that stores the messages sent and received
@@ -378,6 +379,10 @@ export default class CopilotPlugin extends Plugin {
       // Start MCP Manager
       await this.mcpManager.start();
 
+      // Set MCP manager in Mention instance for URL processing
+      const mention = Mention.getInstance();
+      mention.setMcpManager(this.mcpManager);
+
       console.log("MCP system initialized successfully");
     } catch (error) {
       console.error("Failed to initialize MCP system:", error);
@@ -398,6 +403,10 @@ export default class CopilotPlugin extends Plugin {
       if (McpToolAdapterManager.isInitialized()) {
         McpToolAdapterManager.destroy();
       }
+
+      // Reset MCP manager in Mention instance
+      const mention = Mention.getInstance();
+      mention.setMcpManager(undefined as any);
 
       console.log("MCP system cleaned up");
     } catch (error) {

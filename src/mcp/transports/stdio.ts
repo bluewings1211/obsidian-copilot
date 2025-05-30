@@ -43,11 +43,33 @@ export class StdioTransport implements Transport {
 
     try {
       // Spawn the MCP server process
+      const envVars: Record<string, string> = {
+        ...process.env,
+        ...this.config.env,
+        // Disable npm funding messages and other noise
+        NPM_CONFIG_FUND: "false",
+        NPM_CONFIG_AUDIT: "false",
+        NPM_CONFIG_UPDATE_NOTIFIER: "false",
+        SUPPRESS_NO_CONFIG_WARNING: "true",
+      };
+
+      // Ensure PATH includes common binary directories if not already present
+      const commonPaths = [
+        "/usr/local/bin",
+        process.env.HOME + "/.local/bin",
+        "/opt/homebrew/bin",
+      ].filter(Boolean);
+
+      if (envVars.PATH) {
+        for (const path of commonPaths) {
+          if (!envVars.PATH.includes(path)) {
+            envVars.PATH = `${path}:${envVars.PATH}`;
+          }
+        }
+      }
+
       this.process = spawn(this.config.command, this.config.args || [], {
-        env: {
-          ...process.env,
-          ...this.config.env,
-        },
+        env: envVars,
         cwd: this.config.cwd,
         stdio: ["pipe", "pipe", "pipe"],
       });
@@ -190,10 +212,28 @@ export class StdioTransport implements Transport {
       if (isJsonRpcMessage(message)) {
         this.onmessage?.(message);
       } else {
-        this.onerror?.(new Error(`Invalid JSON-RPC message: ${messageStr}`));
+        // Log non-JSON-RPC messages as warnings instead of errors
+        console.warn(`[MCP Server] Non-JSON-RPC message: ${messageStr}`);
       }
     } catch {
-      this.onerror?.(new Error(`Failed to parse message: ${messageStr}`));
+      // Filter out common non-JSON messages that shouldn't be treated as errors
+      const lowerMsg = messageStr.toLowerCase();
+      if (
+        lowerMsg.includes("packages are looking for funding") ||
+        lowerMsg.includes("npm notice") ||
+        lowerMsg.includes("npm warn") ||
+        (lowerMsg.includes("found ") && lowerMsg.includes("vulnerabilities")) ||
+        lowerMsg.startsWith("added ") ||
+        lowerMsg.startsWith("removed ") ||
+        lowerMsg.startsWith("changed ") ||
+        lowerMsg.startsWith("audited ")
+      ) {
+        // These are informational messages from npm/package managers, not errors
+        console.debug(`[MCP Server] Info: ${messageStr}`);
+      } else {
+        // Only treat actual JSON parsing failures as errors
+        console.warn(`[MCP Server] Failed to parse message: ${messageStr}`);
+      }
     }
   }
 

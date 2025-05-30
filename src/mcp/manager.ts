@@ -735,7 +735,20 @@ export class McpManager extends EventEmitter {
       const aggregatedTools = await this.getTools();
       this.emit("toolsUpdated", aggregatedTools);
     } catch (error) {
-      this.log("error", `Failed to refresh tools for ${serverClient.config.name}`, error);
+      // Check if this is a "Method not found" error (server doesn't support tools)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Method not found") && errorMessage.includes("tools/list")) {
+        this.log("debug", `Server ${serverClient.config.name} does not support tools`);
+        // Set empty tools array and mark as updated
+        serverClient.tools = [];
+        serverClient.lastToolsUpdate = new Date();
+
+        // Still emit aggregated tools update
+        const aggregatedTools = await this.getTools();
+        this.emit("toolsUpdated", aggregatedTools);
+      } else {
+        this.log("error", `Failed to refresh tools for ${serverClient.config.name}`, error);
+      }
     }
   }
 
@@ -761,7 +774,20 @@ export class McpManager extends EventEmitter {
       const aggregatedResources = await this.getResources();
       this.emit("resourcesUpdated", aggregatedResources);
     } catch (error) {
-      this.log("error", `Failed to refresh resources for ${serverClient.config.name}`, error);
+      // Check if this is a "Method not found" error (server doesn't support resources)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Method not found") && errorMessage.includes("resources/list")) {
+        this.log("debug", `Server ${serverClient.config.name} does not support resources`);
+        // Set empty resources array and mark as updated
+        serverClient.resources = [];
+        serverClient.lastResourcesUpdate = new Date();
+
+        // Still emit aggregated resources update
+        const aggregatedResources = await this.getResources();
+        this.emit("resourcesUpdated", aggregatedResources);
+      } else {
+        this.log("error", `Failed to refresh resources for ${serverClient.config.name}`, error);
+      }
     }
   }
 
@@ -787,7 +813,20 @@ export class McpManager extends EventEmitter {
       const aggregatedPrompts = await this.getPrompts();
       this.emit("promptsUpdated", aggregatedPrompts);
     } catch (error) {
-      this.log("error", `Failed to refresh prompts for ${serverClient.config.name}`, error);
+      // Check if this is a "Method not found" error (server doesn't support prompts)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Method not found") && errorMessage.includes("prompts/list")) {
+        this.log("debug", `Server ${serverClient.config.name} does not support prompts`);
+        // Set empty prompts array and mark as updated
+        serverClient.prompts = [];
+        serverClient.lastPromptsUpdate = new Date();
+
+        // Still emit aggregated prompts update
+        const aggregatedPrompts = await this.getPrompts();
+        this.emit("promptsUpdated", aggregatedPrompts);
+      } else {
+        this.log("error", `Failed to refresh prompts for ${serverClient.config.name}`, error);
+      }
     }
   }
 

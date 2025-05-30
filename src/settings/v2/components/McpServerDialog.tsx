@@ -15,6 +15,13 @@ import { SettingItem } from "@/components/ui/setting-item";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   McpServerConfig,
   StdioTransportConfig,
   SseTransportConfig,
@@ -151,51 +158,56 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
       case "http":
         newConnection = { url: "", headers: {}, timeout: 30000 };
         break;
+      default:
+        newConnection = { command: "", args: [], env: {}, cwd: "" };
+        break;
     }
 
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       transport: newTransport,
       connection: newConnection,
-    });
+    }));
   };
 
   const handleConnectionUpdate = (field: string, value: string | number) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       connection: {
-        ...formData.connection,
+        ...prev.connection,
         [field]: value,
       },
-    });
+    }));
   };
 
   const handleArgsUpdate = (args: string[]) => {
-    const stdioConfig = formData.connection as StdioTransportConfig;
-    setFormData({
-      ...formData,
-      connection: {
-        ...stdioConfig,
-        args,
-      },
+    setFormData((prev) => {
+      const stdioConfig = prev.connection as StdioTransportConfig;
+      return {
+        ...prev,
+        connection: {
+          ...stdioConfig,
+          args,
+        },
+      };
     });
   };
 
   const addCapability = () => {
     if (newCapability.trim() && !formData.capabilities.includes(newCapability.trim())) {
-      setFormData({
-        ...formData,
-        capabilities: [...formData.capabilities, newCapability.trim()],
-      });
+      setFormData((prev) => ({
+        ...prev,
+        capabilities: [...prev.capabilities, newCapability.trim()],
+      }));
       setNewCapability("");
     }
   };
 
   const removeCapability = (capability: string) => {
-    setFormData({
-      ...formData,
-      capabilities: formData.capabilities.filter((c) => c !== capability),
-    });
+    setFormData((prev) => ({
+      ...prev,
+      capabilities: prev.capabilities.filter((c) => c !== capability),
+    }));
   };
 
   const renderConnectionConfig = () => {
@@ -224,7 +236,9 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                     <Input
                       value={arg}
                       onChange={(e) => {
-                        const newArgs = [...(stdioConfig.args || [])];
+                        const currentArgs =
+                          (formData.connection as StdioTransportConfig).args || [];
+                        const newArgs = [...currentArgs];
                         newArgs[index] = e.target.value;
                         handleArgsUpdate(newArgs);
                       }}
@@ -234,7 +248,9 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const newArgs = (stdioConfig.args || []).filter((_, i) => i !== index);
+                        const currentArgs =
+                          (formData.connection as StdioTransportConfig).args || [];
+                        const newArgs = currentArgs.filter((_, i) => i !== index);
                         handleArgsUpdate(newArgs);
                       }}
                     >
@@ -245,7 +261,10 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => handleArgsUpdate([...(stdioConfig.args || []), ""])}
+                  onClick={() => {
+                    const currentArgs = (formData.connection as StdioTransportConfig).args || [];
+                    handleArgsUpdate([...currentArgs, ""]);
+                  }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   新增參數
@@ -329,7 +348,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="例如: Weather API Server"
                 className={errors.name ? "border-destructive" : ""}
               />
@@ -341,7 +360,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="描述此伺服器的功能和用途"
                 rows={3}
               />
@@ -352,7 +371,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
               title="啟用伺服器"
               description="是否在啟動時自動連接此伺服器"
               checked={formData.enabled}
-              onCheckedChange={(enabled) => setFormData({ ...formData, enabled })}
+              onCheckedChange={(enabled) => setFormData((prev) => ({ ...prev, enabled }))}
             />
           </div>
 
@@ -360,13 +379,18 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
           <div className="space-y-4">
             <div>
               <Label>傳輸類型</Label>
-              <SettingItem
-                type="select"
-                title=""
-                value={formData.transport}
-                onChange={(value) => handleTransportChange(value)}
-                options={transportOptions}
-              />
+              <Select value={formData.transport} onValueChange={handleTransportChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="選擇傳輸類型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {transportOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Card className="p-4">
@@ -420,7 +444,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                 title="連接超時時間 (毫秒)"
                 description="等待伺服器響應的最大時間"
                 value={formData.timeout}
-                onChange={(value) => setFormData({ ...formData, timeout: value })}
+                onChange={(value) => setFormData((prev) => ({ ...prev, timeout: value }))}
                 min={1000}
                 max={60000}
                 step={1000}
@@ -431,7 +455,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                 title="重試次數"
                 description="連接失敗時的重試次數"
                 value={formData.retryAttempts}
-                onChange={(value) => setFormData({ ...formData, retryAttempts: value })}
+                onChange={(value) => setFormData((prev) => ({ ...prev, retryAttempts: value }))}
                 min={0}
                 max={10}
                 step={1}
@@ -442,7 +466,7 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                 title="重試延遲 (毫秒)"
                 description="重試之間的等待時間"
                 value={formData.retryDelay}
-                onChange={(value) => setFormData({ ...formData, retryDelay: value })}
+                onChange={(value) => setFormData((prev) => ({ ...prev, retryDelay: value }))}
                 min={100}
                 max={10000}
                 step={100}

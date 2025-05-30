@@ -12,17 +12,19 @@ import {
 import VectorStoreManager from "@/search/vectorStoreManager";
 import { getSettings, setSettings, updateSetting, useSettingsValue } from "@/settings/model";
 
-// export const DEFAULT_COPILOT_PLUS_CHAT_MODEL = ChatModels.COPILOT_PLUS_FLASH; // Removed
-// export const DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY = // Removed
-//   DEFAULT_COPILOT_PLUS_CHAT_MODEL + "|" + ChatModelProviders.COPILOT_PLUS; // Removed
-// export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL = EmbeddingModels.COPILOT_PLUS_SMALL; // Removed
-// export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY = // Removed
-//   DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL + "|" + EmbeddingModelProviders.COPILOT_PLUS; // Removed
+// Using fallback models since Copilot Plus models are removed
+export const DEFAULT_COPILOT_PLUS_CHAT_MODEL = ChatModels.GPT_41;
+export const DEFAULT_COPILOT_PLUS_CHAT_MODEL_KEY =
+  DEFAULT_COPILOT_PLUS_CHAT_MODEL + "|" + ChatModelProviders.OPENAI;
+export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL = EmbeddingModels.OPENAI_EMBEDDING_SMALL;
+export const DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL_KEY =
+  DEFAULT_COPILOT_PLUS_EMBEDDING_MODEL + "|" + EmbeddingModelProviders.OPENAI;
 
 /** Check if the model key is a Copilot Plus model. */
-// export function isPlusModel(modelKey: string): boolean { // Removed
-//   return modelKey.split("|")[1] === EmbeddingModelProviders.COPILOT_PLUS;
-// }
+export function isPlusModel(modelKey: string): boolean {
+  // Since Copilot Plus models are removed, always return false
+  return false;
+}
 
 /** Hook to get the isPlusUser setting. */
 export function useIsPlusUser(): boolean | undefined {

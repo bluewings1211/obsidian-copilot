@@ -25,6 +25,11 @@ export const McpSettings: React.FC = () => {
   const mcpSettings = settings.mcpIntegration;
 
   const handleAddServer = (serverConfig: Omit<McpServerConfig, "id">) => {
+    // If MCP integration is not enabled, enable it automatically when adding first server
+    if (!mcpSettings.enabled) {
+      toggleMcpIntegration(true);
+    }
+
     const newServer: McpServerConfig = {
       ...serverConfig,
       id: uuidv4(),
@@ -166,7 +171,7 @@ export const McpSettings: React.FC = () => {
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted" />
             <h3 className="text-lg font-medium mb-2">沒有設定的 MCP 伺服器</h3>
             <p className="text-muted mb-4">開始添加 MCP 伺服器以擴展 Copilot 的功能</p>
-            <Button onClick={() => setShowAddDialog(true)} disabled={!mcpSettings.enabled}>
+            <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
               新增第一個伺服器
             </Button>

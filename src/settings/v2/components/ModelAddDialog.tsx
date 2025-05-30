@@ -12,7 +12,7 @@ import {
   SettingKeyProviders,
 } from "@/constants";
 import { CustomModel } from "@/aiParams";
-import { err2String, getProviderInfo, getProviderLabel, omit } from "@/utils";
+import { err2String, getProviderInfo, getProviderLabel } from "@/utils";
 import { Notice } from "obsidian";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -459,15 +459,13 @@ export const ModelAddDialog: React.FC<ModelAddDialogProps> = ({
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent container={dialogElement}>
-                {Object.values(
-                  isEmbeddingModel
-                    ? omit(EmbeddingModelProviders, ["COPILOT_PLUS", "COPILOT_PLUS_JINA"])
-                    : omit(ChatModelProviders, ["COPILOT_PLUS"])
-                ).map((provider) => (
-                  <SelectItem key={provider} value={provider}>
-                    {getProviderLabel(provider)}
-                  </SelectItem>
-                ))}
+                {Object.values(isEmbeddingModel ? EmbeddingModelProviders : ChatModelProviders).map(
+                  (provider) => (
+                    <SelectItem key={provider} value={provider}>
+                      {getProviderLabel(provider)}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </FormField>
