@@ -15,6 +15,35 @@ export interface ChatMessage {
     urls: string[];
   };
   isErrorMessage?: boolean;
+  mcpToolCalls?: McpToolCall[];
+}
+
+/**
+ * MCP 工具調用資訊
+ */
+export interface McpToolCall {
+  /** 工具名稱（包含伺服器前綴） */
+  toolName: string;
+  /** 原始 MCP 工具名稱 */
+  originalToolName: string;
+  /** 伺服器名稱 */
+  serverName: string;
+  /** 伺服器 ID */
+  serverId: string;
+  /** 工具參數 */
+  arguments: any;
+  /** 調用狀態 */
+  status: "pending" | "success" | "error";
+  /** 開始時間 */
+  startTime: number;
+  /** 結束時間 */
+  endTime?: number;
+  /** 工具結果 */
+  result?: any;
+  /** 錯誤訊息 */
+  error?: string;
+  /** 執行時間（毫秒） */
+  duration?: number;
 }
 
 class SharedState {

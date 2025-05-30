@@ -32,6 +32,8 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { IntentAnalyzer } from "./LLMProviders/intentAnalyzer";
+import { McpManager } from "@/mcp/manager";
+import { McpToolAdapterManager } from "@/mcp/tool-adapter";
 
 export default class CopilotPlugin extends Plugin {
   // A chat history that stores the messages sent and received
@@ -42,6 +44,7 @@ export default class CopilotPlugin extends Plugin {
   userMessageHistory: string[] = [];
   vectorStoreManager: VectorStoreManager;
   fileParserManager: FileParserManager;
+  mcpManager?: McpManager;
   settingsUnsubscriber?: () => void;
 
   async onload(): Promise<void> {
@@ -53,6 +56,18 @@ export default class CopilotPlugin extends Plugin {
         await this.saveData(next);
       }
       registerCommands(this, prev, next);
+
+      // Handle MCP settings changes
+      if (
+        prev.mcpIntegration.enabled !== next.mcpIntegration.enabled ||
+        JSON.stringify(prev.mcpIntegration.servers) !==
+          JSON.stringify(next.mcpIntegration.servers) ||
+        prev.mcpIntegration.debugMode !== next.mcpIntegration.debugMode
+      ) {
+        console.log("MCP settings changed, reinitializing...");
+        await this.cleanupMcpSystem();
+        await this.initializeMcpSystem();
+      }
     });
     this.addSettingTab(new CopilotSettingTab(this.app, this));
     // Always have one instance of sharedState and chainManager in the plugin
@@ -81,6 +96,9 @@ export default class CopilotPlugin extends Plugin {
     registerCommands(this, undefined, getSettings());
 
     IntentAnalyzer.initTools(this.app.vault);
+
+    // Initialize MCP system
+    await this.initializeMcpSystem();
 
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor) => {
@@ -111,6 +129,9 @@ export default class CopilotPlugin extends Plugin {
   }
 
   async onunload() {
+    // Clean up MCP system
+    await this.cleanupMcpSystem();
+
     // Clean up VectorStoreManager
     if (this.vectorStoreManager) {
       this.vectorStoreManager.onunload();
@@ -327,5 +348,60 @@ export default class CopilotPlugin extends Plugin {
       content: doc.pageContent,
       metadata: doc.metadata,
     }));
+  }
+
+  /**
+   * Initialize MCP system
+   */
+  private async initializeMcpSystem(): Promise<void> {
+    try {
+      const settings = getSettings();
+
+      if (!settings.mcpIntegration.enabled) {
+        console.log("MCP integration is disabled");
+        return;
+      }
+
+      console.log("Initializing MCP system...");
+
+      // Initialize MCP Manager
+      this.mcpManager = new McpManager(settings.mcpIntegration, {
+        debug: settings.mcpIntegration.debugMode,
+        logLevel: settings.mcpIntegration.logLevel as any,
+      });
+
+      // Initialize MCP Tool Adapter Manager
+      McpToolAdapterManager.initialize(this.mcpManager, {
+        debug: settings.mcpIntegration.debugMode,
+      });
+
+      // Start MCP Manager
+      await this.mcpManager.start();
+
+      console.log("MCP system initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize MCP system:", error);
+      new Notice("Failed to initialize MCP system. Check console for details.");
+    }
+  }
+
+  /**
+   * Cleanup MCP system
+   */
+  private async cleanupMcpSystem(): Promise<void> {
+    try {
+      if (this.mcpManager) {
+        await this.mcpManager.stop();
+        this.mcpManager = undefined;
+      }
+
+      if (McpToolAdapterManager.isInitialized()) {
+        McpToolAdapterManager.destroy();
+      }
+
+      console.log("MCP system cleaned up");
+    } catch (error) {
+      console.error("Error cleaning up MCP system:", error);
+    }
   }
 }

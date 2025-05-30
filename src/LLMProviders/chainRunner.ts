@@ -15,6 +15,7 @@ import {
 } from "@/imageProcessing/imageProcessor";
 // import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import { logInfo } from "@/logger";
+import { McpToolCallTracker } from "@/mcp/tool-call-tracker";
 import { getSettings, getSystemPrompt } from "@/settings/model";
 import { ChatMessage } from "@/sharedState";
 import { ToolManager } from "@/tools/toolManager";
@@ -30,7 +31,7 @@ import {
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Notice } from "obsidian";
 import ChainManager from "./chainManager";
-import { COPILOT_TOOL_NAMES, IntentAnalyzer } from "./intentAnalyzer";
+import { getAllToolNames, IntentAnalyzer } from "./intentAnalyzer";
 
 class ThinkBlockStreamer {
   private hasOpenThinkBlock = false;
@@ -556,9 +557,10 @@ class CopilotPlusChainRunner extends BaseChainRunner {
       }
 
       // Use the same removeAtCommands logic as IntentAnalyzer
+      const allToolNames = await getAllToolNames();
       const cleanedUserMessage = userMessage.message
         .split(" ")
-        .filter((word) => !COPILOT_TOOL_NAMES.includes(word.toLowerCase()))
+        .filter((word) => !allToolNames.includes(word.toLowerCase()))
         .join(" ")
         .trim();
 
@@ -683,18 +685,53 @@ class CopilotPlusChainRunner extends BaseChainRunner {
     updateLoadingMessage?: (message: string) => void
   ) {
     const toolOutputs = [];
-    for (const toolCall of toolCalls) {
+    for (let i = 0; i < toolCalls.length; i++) {
+      const toolCall = toolCalls[i];
       if (debug) {
         console.log(`==== Step 2: Calling tool: ${toolCall.tool.name} ====`);
       }
+
+      // Check if this is an MCP tool
+      const isMcpTool = ToolManager.isMcpTool(toolCall.tool);
+
       if (toolCall.tool.name === "localSearch") {
         updateLoadingMessage?.(LOADING_MESSAGES.READING_FILES);
       } else if (toolCall.tool.name === "webSearch") {
         updateLoadingMessage?.(LOADING_MESSAGES.SEARCHING_WEB);
       } else if (toolCall.tool.name === "getFileTree") {
         updateLoadingMessage?.(LOADING_MESSAGES.READING_FILE_TREE);
+      } else if (isMcpTool) {
+        updateLoadingMessage?.(
+          `執行 MCP 工具: ${toolCall.tool.originalToolName || toolCall.tool.name}`
+        );
       }
-      const output = await ToolManager.callTool(toolCall.tool, toolCall.args);
+
+      let output;
+      if (isMcpTool) {
+        // Create tracked MCP tool call
+        const trackedCall = McpToolCallTracker.createTrackedToolCall(
+          -1, // We don't have a message index here, will be updated in chat
+          i,
+          {
+            toolName: toolCall.tool.name,
+            originalToolName: toolCall.tool.mcpToolName || toolCall.tool.name,
+            serverName: toolCall.tool.serverName || "unknown",
+            serverId: toolCall.tool.serverId || "unknown",
+            arguments: toolCall.args || {},
+          }
+        );
+
+        try {
+          output = await trackedCall.execute();
+        } catch {
+          // Error is already handled by the tracker
+          output = null;
+        }
+      } else {
+        // Regular tool call
+        output = await ToolManager.callTool(toolCall.tool, toolCall.args);
+      }
+
       toolOutputs.push({ tool: toolCall.tool.name, output });
     }
     return toolOutputs;

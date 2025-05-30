@@ -12,6 +12,7 @@ import { CustomPromptProcessor } from "@/customPromptProcessor";
 import { getAIResponse } from "@/langchainStream";
 import ChainManager from "@/LLMProviders/chainManager";
 import CopilotPlugin from "@/main";
+import { McpToolCallTracker, ToolCallUpdate } from "@/mcp/tool-call-tracker";
 import { Mention } from "@/mentions/Mention";
 import { getSettings, useSettingsValue } from "@/settings/model";
 import SharedState, { ChatMessage, useSharedState } from "@/sharedState";
@@ -54,6 +55,54 @@ const Chat: React.FC<ChatProps> = ({
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   const mention = Mention.getInstance();
+
+  // MCP 工具調用狀態更新處理
+  const handleMcpToolCallUpdate = useCallback(
+    (update: ToolCallUpdate) => {
+      const { messageIndex, toolCallIndex, update: toolCallUpdate } = update;
+
+      // 更新對應訊息的 MCP 工具調用狀態
+      const updatedHistory = [...chatHistory];
+      if (updatedHistory[messageIndex]) {
+        if (!updatedHistory[messageIndex].mcpToolCalls) {
+          updatedHistory[messageIndex].mcpToolCalls = [];
+        }
+
+        // 確保有足夠的 tool call 槽位
+        while (updatedHistory[messageIndex].mcpToolCalls!.length <= toolCallIndex) {
+          updatedHistory[messageIndex].mcpToolCalls!.push({
+            toolName: "",
+            originalToolName: "",
+            serverName: "",
+            serverId: "",
+            arguments: {},
+            status: "pending",
+            startTime: Date.now(),
+          });
+        }
+
+        // 更新特定的工具調用
+        updatedHistory[messageIndex].mcpToolCalls![toolCallIndex] = {
+          ...updatedHistory[messageIndex].mcpToolCalls![toolCallIndex],
+          ...toolCallUpdate,
+        };
+
+        // 更新聊天記錄
+        clearMessages();
+        updatedHistory.forEach(addMessage);
+      }
+    },
+    [chatHistory, addMessage, clearMessages]
+  );
+
+  // 註冊 MCP 工具調用更新回調
+  useEffect(() => {
+    McpToolCallTracker.addUpdateCallback(handleMcpToolCallUpdate);
+
+    return () => {
+      McpToolCallTracker.removeUpdateCallback(handleMcpToolCallUpdate);
+    };
+  }, [handleMcpToolCallUpdate]);
 
   const contextProcessor = ContextProcessor.getInstance();
   const inputRef = useRef<HTMLTextAreaElement>(null);

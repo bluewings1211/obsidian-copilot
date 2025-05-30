@@ -36,6 +36,9 @@ export type {
 export { McpToolAdapter, McpToolAdapterManager } from "./tool-adapter";
 export type { McpToolWrapper, McpToolAdapterOptions } from "./tool-adapter";
 
+// Export integration testing utilities
+export { testMcpIntegration, testMcpToolCall, debugMcpTools } from "./integration-test";
+
 // Export transports
 export * from "./transports";
 

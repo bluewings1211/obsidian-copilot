@@ -1,4 +1,5 @@
 import ChatSingleMessage from "@/components/chat-components/ChatSingleMessage";
+import { McpServerStatus } from "@/components/chat-components/McpServerStatus";
 import { RelevantNotes } from "@/components/chat-components/RelevantNotes";
 import { SuggestedPrompts } from "@/components/chat-components/SuggestedPrompts";
 import { useSettingsValue } from "@/settings/model";
@@ -89,6 +90,7 @@ const ChatMessages = memo(
             key="relevant-notes-in-chat"
           />
         )}
+        <McpServerStatus className="mb-4" />
         <div
           data-testid="chat-messages"
           className="flex flex-col items-start justify-start flex-1 overflow-y-auto w-full break-words text-[calc(var(--font-text-size)_-_2px)] box-border scroll-smooth mt-auto select-text"

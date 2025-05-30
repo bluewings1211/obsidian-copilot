@@ -1,4 +1,5 @@
 import { ChatButtons } from "@/components/chat-components/ChatButtons";
+import { McpToolDisplay } from "@/components/chat-components/McpToolDisplay";
 import { SourcesModal } from "@/components/modals/SourcesModal";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -363,6 +364,9 @@ const ChatSingleMessage: React.FC<ChatSingleMessageProps> = ({
         <div className="w-6 shrink-0">{message.sender === USER_SENDER ? <User /> : <Bot />}</div>
         <div className="flex flex-col flex-grow max-w-full gap-2">
           {!isEditing && <MessageContext context={message.context} />}
+          {!isEditing && message.mcpToolCalls && message.mcpToolCalls.length > 0 && (
+            <McpToolDisplay toolCalls={message.mcpToolCalls} />
+          )}
           <div className="message-content">{renderMessageContent()}</div>
 
           {!isStreaming && (

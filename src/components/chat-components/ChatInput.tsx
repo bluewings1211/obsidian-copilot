@@ -13,7 +13,7 @@ import {
 import { ModelDisplay } from "@/components/ui/model-display";
 import { ContextProcessor } from "@/contextProcessor";
 import { CustomPromptProcessor } from "@/customPromptProcessor";
-import { COPILOT_TOOL_NAMES } from "@/LLMProviders/intentAnalyzer";
+import { getAllToolNames } from "@/LLMProviders/intentAnalyzer";
 import { Mention } from "@/mentions/Mention";
 import { getModelKeyFromModel, useSettingsValue } from "@/settings/model";
 import { getToolDescription } from "@/tools/toolManager";
@@ -213,12 +213,17 @@ const ChatInput = forwardRef<{ focus: () => void }, ChatInputProps>(
       }).open();
     };
 
-    const showCopilotPlusOptionsModal = () => {
+    const showCopilotPlusOptionsModal = async () => {
+      // Get all available tool names including MCP tools
+      const allToolNames = await getAllToolNames();
+
       // Create a map of options with their descriptions
-      const optionsWithDescriptions = COPILOT_TOOL_NAMES.map((option) => ({
-        title: option,
-        description: getToolDescription(option),
-      }));
+      const optionsWithDescriptions = await Promise.all(
+        allToolNames.map(async (option) => ({
+          title: option,
+          description: await getToolDescription(option),
+        }))
+      );
 
       new ListPromptModal(
         app,
