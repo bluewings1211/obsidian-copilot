@@ -55,6 +55,7 @@ Check out the demo video below for the first sneak peak of what Copilot Plus can
 - **Interact with your entire vault** using "Vault QA" mode. Ask questions and receive **cited responses**!
 - All QA modes leverage retrieval augmentation with a **local index**, ensuring your data isn't sent to a cloud-based vector search service.
 - **Copilot Plus (beta)**: supercharge your second brain with a **powerful AI agent** right inside your Obsidian vault. [Learn more here](https://obsidiancopilot.com).
+- **🔗 MCP Integration (NEW!)**: Connect to external tools and services using the Model Context Protocol. Access file systems, databases, APIs, and more! [Learn more](docs/MCP_USER_GUIDE.md).
 
 Chat and Vault QA modes are completely free to use. Copilot Plus is currently in beta, buy now to lock in the lowest price!
 
@@ -83,7 +84,37 @@ Add model using the "Custom Model" form.
 
 You can also use your own system prompt, choose between different embedding providers for Vault QA and more.
 
-#### 💬 User Custom Prompt: Create as Many Copilot Commands as You Like!
+#### 🔗 MCP Integration Setup
+
+**Model Context Protocol (MCP)** allows Copilot to connect to external tools and services, dramatically expanding its capabilities.
+
+**Quick Setup:**
+
+1. Go to Copilot Settings → **MCP Settings**
+2. Enable "**Enable MCP Integration**"
+3. Click "**Add Server**" to configure your first MCP server
+4. Choose from popular servers like:
+   - **Filesystem Server**: Access local files and directories
+   - **Memory Bank**: Persistent context storage across sessions
+   - **SQLite Database**: Query and analyze structured data
+   - **GitHub Integration**: Repository and issue management
+
+**Popular MCP Servers:**
+
+```bash
+# Install filesystem server
+npm install -g @modelcontextprotocol/server-filesystem
+
+# Install memory bank server
+npm install -g @upstash/context7-mcp
+
+# Install database server
+npm install -g @modelcontextprotocol/server-sqlite
+```
+
+**📚 Complete MCP Guide**: For detailed setup instructions, troubleshooting, and advanced configuration, see our [MCP User Guide](docs/MCP_USER_GUIDE.md).
+
+#### � User Custom Prompt: Create as Many Copilot Commands as You Like!
 
 You can add, apply, edit and delete your own custom Copilot commands, all persisted in your **local** Obsidian environment!
 Check out this demo video below!
