@@ -439,12 +439,33 @@ export class McpManager extends EventEmitter {
 
     this.log("debug", `Calling tool ${params.name} on server ${serverId}`, { params, context });
 
+    // Enhanced debug logging for parameter tracking
+    console.log(`[McpManager] callTool received params:`, {
+      serverId,
+      params,
+      paramName: params.name,
+      paramArguments: params.arguments,
+      argumentsKeys: params.arguments ? Object.keys(params.arguments) : [],
+      argumentsType: typeof params.arguments,
+      argumentsString: JSON.stringify(params.arguments),
+    });
+
     try {
       const result = await serverClient.client.callTool(params);
       this.log("debug", `Tool ${params.name} completed successfully`, { result });
       return result;
     } catch (error) {
       this.log("error", `Tool ${params.name} failed on server ${serverId}`, error);
+
+      // Enhanced error logging
+      console.error(`[McpManager] Tool call failed:`, {
+        toolName: params.name,
+        serverId,
+        arguments: params.arguments,
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+
       throw error;
     }
   }

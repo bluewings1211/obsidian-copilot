@@ -193,6 +193,19 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
     });
   };
 
+  const handleEnvUpdate = (env: Record<string, string>) => {
+    setFormData((prev) => {
+      const stdioConfig = prev.connection as StdioTransportConfig;
+      return {
+        ...prev,
+        connection: {
+          ...stdioConfig,
+          env,
+        },
+      };
+    });
+  };
+
   const addCapability = () => {
     if (newCapability.trim() && !formData.capabilities.includes(newCapability.trim())) {
       setFormData((prev) => ({
@@ -280,6 +293,75 @@ export const McpServerDialog: React.FC<McpServerDialogProps> = ({
                 onChange={(e) => handleConnectionUpdate("cwd", e.target.value)}
                 placeholder="例如: /path/to/working/directory"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="env">環境變數</Label>
+              <p className="text-sm text-muted mb-2">設定 MCP 伺服器的環境變數 (例如: API 金鑰)</p>
+              <div className="space-y-2">
+                {Object.entries(stdioConfig.env || {}).map(([key, value], index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={key}
+                      onChange={(e) => {
+                        const currentEnv = (formData.connection as StdioTransportConfig).env || {};
+                        const newEnv = { ...currentEnv };
+                        delete newEnv[key];
+                        if (e.target.value.trim()) {
+                          newEnv[e.target.value] = value;
+                        }
+                        handleEnvUpdate(newEnv);
+                      }}
+                      placeholder="變數名稱"
+                      className="flex-1"
+                    />
+                    <Input
+                      value={value}
+                      onChange={(e) => {
+                        const currentEnv = (formData.connection as StdioTransportConfig).env || {};
+                        const newEnv = { ...currentEnv };
+                        if (key.trim()) {
+                          newEnv[key] = e.target.value;
+                        }
+                        handleEnvUpdate(newEnv);
+                      }}
+                      placeholder="變數值"
+                      className="flex-1"
+                      type={
+                        key.toLowerCase().includes("key") ||
+                        key.toLowerCase().includes("secret") ||
+                        key.toLowerCase().includes("token")
+                          ? "password"
+                          : "text"
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const currentEnv = (formData.connection as StdioTransportConfig).env || {};
+                        const newEnv = { ...currentEnv };
+                        delete newEnv[key];
+                        handleEnvUpdate(newEnv);
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const currentEnv = (formData.connection as StdioTransportConfig).env || {};
+                    const newKey = `ENV_VAR_${Object.keys(currentEnv).length + 1}`;
+                    handleEnvUpdate({ ...currentEnv, [newKey]: "" });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  新增環境變數
+                </Button>
+              </div>
             </div>
           </div>
         );

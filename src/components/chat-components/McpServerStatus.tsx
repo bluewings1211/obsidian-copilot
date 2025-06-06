@@ -3,26 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { McpToolAdapterManager } from "@/mcp/tool-adapter";
 import { getSettings } from "@/settings/model";
+import { McpToolAdapterManager } from "@/mcp/tool-adapter";
 import {
+  AlertCircle,
+  CheckCircle,
   ChevronDown,
   ChevronRight,
+  Clock,
   Server,
   Wifi,
   WifiOff,
-  Settings,
   Zap,
-  AlertCircle,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface McpServerInfo {
   id: string;
   name: string;
-  status: "connected" | "disconnected" | "error";
+  status: "connected" | "connecting" | "disconnected" | "error";
   toolCount: number;
-  lastError?: string;
+  tools: Array<{ name: string; description: string }>;
+  lastConnected?: Date;
+  error?: string;
 }
 
 interface McpServerStatusProps {
@@ -30,84 +33,43 @@ interface McpServerStatusProps {
 }
 
 /**
- * 顯示 MCP 服務器狀態的組件
+ * 顯示單個 MCP 服務器狀態的組件
  */
-export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) => {
-  const [servers, setServers] = useState<McpServerInfo[]>([]);
+const McpServerItem: React.FC<{ server: McpServerInfo }> = ({ server }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
 
-  // 更新服務器狀態
-  const updateServerStatus = async () => {
-    try {
-      const settings = getSettings();
-      setIsEnabled(settings.mcpIntegration.enabled);
-
-      if (!settings.mcpIntegration.enabled || !McpToolAdapterManager.isInitialized()) {
-        setServers([]);
-        return;
-      }
-
-      const adapter = McpToolAdapterManager.getInstance();
-      const tools = await adapter.getTools();
-
-      // 按服務器分組工具
-      const serverMap = new Map<string, McpServerInfo>();
-
-      for (const tool of tools) {
-        if (!serverMap.has(tool.serverId)) {
-          serverMap.set(tool.serverId, {
-            id: tool.serverId,
-            name: tool.serverName,
-            status: "connected",
-            toolCount: 0,
-          });
-        }
-
-        const server = serverMap.get(tool.serverId)!;
-        server.toolCount += 1;
-      }
-
-      setServers(Array.from(serverMap.values()));
-    } catch (error) {
-      console.error("Failed to update MCP server status:", error);
-      setServers([]);
-    }
-  };
-
-  useEffect(() => {
-    updateServerStatus();
-
-    // 定期更新狀態
-    const interval = setInterval(updateServerStatus, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const getStatusIcon = (status: McpServerInfo["status"]) => {
-    switch (status) {
+  const getStatusIcon = () => {
+    switch (server.status) {
       case "connected":
-        return <Wifi className="w-3 h-3 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "connecting":
+        return <Clock className="w-4 h-4 text-blue-500 animate-spin" />;
       case "disconnected":
-        return <WifiOff className="w-3 h-3 text-yellow-500" />;
+        return <WifiOff className="w-4 h-4 text-gray-500" />;
       case "error":
-        return <AlertCircle className="w-3 h-3 text-red-500" />;
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
     }
   };
 
-  const getStatusBadge = (status: McpServerInfo["status"]) => {
-    const baseClasses = "text-xs";
-    switch (status) {
+  const getStatusBadge = () => {
+    const baseClasses = "text-xs font-medium";
+    switch (server.status) {
       case "connected":
         return (
           <Badge variant="secondary" className={cn(baseClasses, "bg-green-100 text-green-800")}>
             已連接
           </Badge>
         );
+      case "connecting":
+        return (
+          <Badge variant="secondary" className={cn(baseClasses, "bg-blue-100 text-blue-800")}>
+            連接中
+          </Badge>
+        );
       case "disconnected":
         return (
-          <Badge variant="secondary" className={cn(baseClasses, "bg-yellow-100 text-yellow-800")}>
-            已斷線
+          <Badge variant="secondary" className={cn(baseClasses, "bg-gray-100 text-gray-800")}>
+            未連接
           </Badge>
         );
       case "error":
@@ -119,18 +81,205 @@ export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) =
     }
   };
 
-  if (!isEnabled) {
+  return (
+    <div className="border border-border rounded-md p-3 space-y-2 bg-background/50">
+      {/* 服務器標題和狀態 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {getStatusIcon()}
+          <span className="font-medium text-sm">{server.name}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="text-xs">
+                <Zap className="w-3 h-3 mr-1" />
+                {server.toolCount}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{server.toolCount} 個可用工具</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <div className="flex items-center gap-2">
+          {getStatusBadge()}
+          {server.lastConnected && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-muted-foreground">
+                  {server.lastConnected.toLocaleTimeString()}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>最後連接時間</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* 錯誤訊息 */}
+      {server.status === "error" && server.error && (
+        <div className="text-xs text-red-600 bg-red-50 p-2 rounded">{server.error}</div>
+      )}
+
+      {/* 可摺疊的工具列表 */}
+      {server.toolCount > 0 && (
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-start p-0 h-auto">
+              {isExpanded ? (
+                <ChevronDown className="w-4 h-4 mr-1" />
+              ) : (
+                <ChevronRight className="w-4 h-4 mr-1" />
+              )}
+              <span className="text-xs text-muted-foreground">
+                {isExpanded ? "隱藏工具列表" : `顯示 ${server.toolCount} 個工具`}
+              </span>
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1 mt-2">
+            {server.tools.map((tool, index) => (
+              <div key={index} className="text-xs bg-muted p-2 rounded">
+                <div className="font-medium">{tool.name}</div>
+                {tool.description && (
+                  <div className="text-muted-foreground mt-1">{tool.description}</div>
+                )}
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </div>
+  );
+};
+
+/**
+ * MCP 服務器狀態顯示主組件
+ */
+export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [servers, setServers] = useState<McpServerInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadServerStatus();
+
+    // 每 30 秒更新一次狀態
+    const interval = setInterval(loadServerStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadServerStatus = async () => {
+    try {
+      const settings = getSettings();
+
+      // 如果 MCP 整合未啟用，不顯示狀態
+      if (!settings.mcpIntegration.enabled) {
+        setServers([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 如果 McpToolAdapterManager 未初始化，顯示未連接狀態
+      if (!McpToolAdapterManager.isInitialized()) {
+        setServers([
+          {
+            id: "not-initialized",
+            name: "MCP 服務",
+            status: "disconnected",
+            toolCount: 0,
+            tools: [],
+            error: "MCP Tool Adapter Manager 尚未初始化",
+          },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
+      const adapter = McpToolAdapterManager.getInstance();
+
+      try {
+        // 獲取所有可用工具
+        const tools = await adapter.getTools();
+
+        // 按服務器分組工具
+        const serverMap = new Map<string, McpServerInfo>();
+
+        for (const tool of tools) {
+          const serverId = tool.serverId || "unknown";
+          const serverName = tool.serverName || `服務器 ${serverId}`;
+
+          if (!serverMap.has(serverId)) {
+            serverMap.set(serverId, {
+              id: serverId,
+              name: serverName,
+              status: "connected",
+              toolCount: 0,
+              tools: [],
+              lastConnected: new Date(),
+            });
+          }
+
+          const serverInfo = serverMap.get(serverId)!;
+          serverInfo.toolCount++;
+          serverInfo.tools.push({
+            name: tool.name,
+            description: tool.description || "無描述",
+          });
+        }
+
+        setServers(Array.from(serverMap.values()));
+      } catch (error) {
+        console.error("Failed to load MCP server status:", error);
+        setServers([
+          {
+            id: "error",
+            name: "MCP 服務",
+            status: "error",
+            toolCount: 0,
+            tools: [],
+            error: `載入失敗: ${error.message}`,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error loading server status:", error);
+      setServers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 如果正在載入，顯示載入狀態
+  if (isLoading) {
+    return (
+      <div className={cn("space-y-2", className)}>
+        <div className="border border-border rounded-md p-3 bg-background/50">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-500 animate-spin" />
+            <span className="text-sm">載入 MCP 服務器狀態...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果沒有服務器，不顯示
+  if (servers.length === 0) {
     return null;
   }
 
   const connectedCount = servers.filter((s) => s.status === "connected").length;
-  const totalToolCount = servers.reduce((sum, s) => sum + s.toolCount, 0);
+  const errorCount = servers.filter((s) => s.status === "error").length;
+  const totalTools = servers.reduce((sum, s) => sum + s.toolCount, 0);
 
   return (
-    <div className={cn("border border-border rounded-md p-2 bg-background/50", className)}>
+    <div className={cn("space-y-2", className)}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-start p-1 h-auto">
+          <Button
+            variant="ghost"
+            className="w-full justify-start p-2 h-auto border border-border rounded-md bg-background/30"
+          >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 {isExpanded ? (
@@ -140,59 +289,46 @@ export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) =
                 )}
                 <Server className="w-4 h-4" />
                 <span className="text-sm font-medium">MCP 服務器</span>
+                <Badge variant="secondary" className="text-xs">
+                  {servers.length}
+                </Badge>
               </div>
               <div className="flex items-center gap-1">
-                {servers.length > 0 && (
-                  <>
-                    <Badge variant="secondary" className="text-xs">
-                      {connectedCount}/{servers.length}
-                    </Badge>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="text-xs">
-                          <Zap className="w-3 h-3 mr-1" />
-                          {totalToolCount}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>總共 {totalToolCount} 個工具</TooltipContent>
-                    </Tooltip>
-                  </>
+                {connectedCount > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                        <Wifi className="w-3 h-3 mr-1" />
+                        {connectedCount}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>{connectedCount} 個服務器已連接</TooltipContent>
+                  </Tooltip>
+                )}
+                {totalTools > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                        <Zap className="w-3 h-3 mr-1" />
+                        {totalTools}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>{totalTools} 個工具可用</TooltipContent>
+                  </Tooltip>
+                )}
+                {errorCount > 0 && (
+                  <Badge variant="secondary" className="text-xs bg-red-100 text-red-800">
+                    錯誤: {errorCount}
+                  </Badge>
                 )}
               </div>
             </div>
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-1 pt-2">
-          {servers.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-2">
-              沒有已配置的 MCP 服務器
-            </div>
-          ) : (
-            servers.map((server) => (
-              <div
-                key={server.id}
-                className="flex items-center justify-between p-2 rounded border border-border/50"
-              >
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(server.status)}
-                  <span className="text-sm font-medium">{server.name}</span>
-                  {server.toolCount > 0 && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-xs">
-                          <Settings className="w-3 h-3 mr-1" />
-                          {server.toolCount}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>{server.toolCount} 個工具</TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">{getStatusBadge(server.status)}</div>
-              </div>
-            ))
-          )}
-          <div className="text-xs text-muted-foreground text-center pt-1">狀態會自動更新</div>
+        <CollapsibleContent className="space-y-2 pt-2">
+          {servers.map((server) => (
+            <McpServerItem key={server.id} server={server} />
+          ))}
         </CollapsibleContent>
       </Collapsible>
     </div>

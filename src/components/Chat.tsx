@@ -5,6 +5,7 @@ import { ChatControls } from "@/components/chat-components/ChatControls";
 import ChatInput from "@/components/chat-components/ChatInput";
 import ChatMessages from "@/components/chat-components/ChatMessages";
 import { NewVersionBanner } from "@/components/chat-components/NewVersionBanner";
+import McpServerStatus from "@/components/chat-components/McpServerStatus";
 import { ABORT_REASON, COMMAND_IDS, EVENT_NAMES, LOADING_MESSAGES, USER_SENDER } from "@/constants";
 import { AppContext, EventTargetContext } from "@/context";
 import { ContextProcessor } from "@/contextProcessor";
@@ -607,6 +608,7 @@ ${chatContent}`;
   return (
     <div className="flex flex-col size-full overflow-hidden">
       <NewVersionBanner currentVersion={plugin.manifest.version} />
+      <McpServerStatus className="mx-4 mt-2" />
       <ChatMessages
         chatHistory={chatHistory}
         currentAiMessage={currentAiMessage}

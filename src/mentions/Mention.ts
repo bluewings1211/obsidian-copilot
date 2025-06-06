@@ -72,14 +72,24 @@ export class Mention {
 
       const startTime = Date.now();
 
-      // Call the fetch tool
-      const result = await this.mcpManager.callTool(fetchServer.id, {
+      // Debug logging for parameter tracking
+      const toolParams = {
         name: "fetch",
         arguments: {
           url: url,
           max_length: 5000,
         },
+      };
+
+      console.log(`[Mention] About to call MCP tool with params:`, {
+        serverId: fetchServer.id,
+        serverName: fetchServer.name,
+        toolParams,
+        url,
       });
+
+      // Call the fetch tool
+      const result = await this.mcpManager.callTool(fetchServer.id, toolParams);
 
       const elapsed = Date.now() - startTime;
 

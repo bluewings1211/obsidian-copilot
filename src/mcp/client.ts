@@ -270,7 +270,21 @@ export class McpClient extends EventEmitter {
    */
   public async callTool(params: CallToolParams): Promise<CallToolResult> {
     this.ensureConnected();
-    return this.sendRequest(MCP_METHODS.TOOLS_CALL, params as unknown as Record<string, unknown>);
+
+    // Debug logging to track parameter passing
+    this.log("debug", "McpClient.callTool received params", params);
+    this.log("debug", "McpClient.callTool arguments field", params.arguments);
+
+    const result = this.sendRequest(
+      MCP_METHODS.TOOLS_CALL,
+      params as unknown as Record<string, unknown>
+    );
+    this.log("debug", "McpClient.callTool sendRequest called with", {
+      method: MCP_METHODS.TOOLS_CALL,
+      params,
+    });
+
+    return result;
   }
 
   /**
@@ -413,7 +427,14 @@ export class McpClient extends EventEmitter {
     }
 
     const id = this.generateRequestId();
+
+    // Debug logging for parameter tracking
+    this.log("debug", `sendRequest called with method: ${method}`, { params });
+
     const request = createRequest(id, method, params);
+
+    // Debug logging for created request
+    this.log("debug", `Created JSON-RPC request`, { request });
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -435,7 +456,7 @@ export class McpClient extends EventEmitter {
         reject(error);
       });
 
-      this.log("debug", `Sent request: ${method}`, { id, params });
+      this.log("debug", `Sent request: ${method}`, { id, params, fullRequest: request });
     });
   }
 

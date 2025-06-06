@@ -226,17 +226,29 @@ export class McpToolAdapter {
       }, this.options.timeout);
     });
 
+    // 確保參數格式正確
+    const sanitizedArgs = this.sanitizeArguments(args);
+
+    this.log(`Calling MCP tool ${toolName} with sanitized arguments`, sanitizedArgs);
+
     const callPromise = this.mcpManager.callTool(serverId, {
       name: toolName,
-      arguments: args || {},
+      arguments: sanitizedArgs,
     });
 
     try {
       const result = (await Promise.race([callPromise, timeoutPromise])) as CallToolResult;
       return this.formatToolResult(result);
     } catch (error) {
-      // 改善錯誤訊息
+      // 提供更詳細的錯誤資訊
+      this.log(`MCP tool ${toolName} failed with error:`, error);
       if (error instanceof Error) {
+        // 檢查是否為參數驗證錯誤
+        if (error.message.includes("Invalid arguments")) {
+          throw new Error(
+            `Invalid arguments for ${toolName}: ${error.message}. Arguments provided: ${JSON.stringify(sanitizedArgs)}`
+          );
+        }
         throw new Error(`MCP tool error: ${error.message}`);
       }
       throw new Error(`MCP tool error: ${String(error)}`);
@@ -294,6 +306,56 @@ export class McpToolAdapter {
         return item;
       }),
     };
+  }
+
+  /**
+   * 清理和驗證參數
+   */
+  private sanitizeArguments(args: any): any {
+    if (!args || typeof args !== "object") {
+      return {};
+    }
+
+    // 創建一個乾淨的參數物件
+    const sanitized: any = {};
+
+    for (const [key, value] of Object.entries(args)) {
+      // 跳過 undefined 和 function 值
+      if (value === undefined || typeof value === "function") {
+        continue;
+      }
+
+      // 處理 null 值
+      if (value === null) {
+        sanitized[key] = null;
+        continue;
+      }
+
+      // 處理基本類型
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        sanitized[key] = value;
+        continue;
+      }
+
+      // 處理陣列
+      if (Array.isArray(value)) {
+        sanitized[key] = value.map((item) => {
+          if (typeof item === "object" && item !== null) {
+            return this.sanitizeArguments(item);
+          }
+          return item;
+        });
+        continue;
+      }
+
+      // 處理嵌套物件
+      if (typeof value === "object") {
+        sanitized[key] = this.sanitizeArguments(value);
+        continue;
+      }
+    }
+
+    return sanitized;
   }
 
   /**

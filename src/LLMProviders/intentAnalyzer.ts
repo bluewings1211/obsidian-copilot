@@ -303,10 +303,12 @@ export class IntentAnalyzer {
         const tool = mcpTools.find((t) => t.name === toolName);
 
         if (tool) {
-          // For now, call with empty args - this could be enhanced to parse args from message
+          // Extract arguments from the message content
+          const args = this.extractMcpToolArguments(originalMessage, mention, tool);
+
           processedToolCalls.push({
             tool,
-            args: {},
+            args,
           });
         }
       }
@@ -318,6 +320,123 @@ export class IntentAnalyzer {
     } catch (error) {
       console.warn("Failed to process MCP tool calls:", error);
     }
+  }
+
+  /**
+   * Extract arguments for MCP tools from the message content
+   */
+  private static extractMcpToolArguments(
+    originalMessage: string,
+    toolMention: string,
+    tool: any
+  ): any {
+    // Get the content after the tool mention
+    const toolIndex = originalMessage.indexOf(toolMention);
+    const contentAfterTool = originalMessage.substring(toolIndex + toolMention.length).trim();
+
+    // If there's no content after the tool mention, return empty args
+    if (!contentAfterTool) {
+      return {};
+    }
+
+    // Special handling for sequential thinking tool
+    if (tool.name && tool.name.includes("sequential") && tool.name.includes("thinking")) {
+      return {
+        thought: contentAfterTool,
+        thoughtNumber: 1,
+        totalThoughts: 3,
+        nextThoughtNeeded: true,
+      };
+    }
+
+    // Check if the tool has input schema to guide argument extraction
+    const inputSchema = tool.inputSchema;
+    const args: any = {};
+
+    if (inputSchema && inputSchema.properties) {
+      const properties = inputSchema.properties;
+
+      // Handle common argument patterns based on schema
+      for (const [propName, propSchema] of Object.entries(properties)) {
+        const prop = propSchema as any;
+
+        // For 'thought' parameter (sequential thinking tool)
+        if (propName === "thought" && prop.type === "string") {
+          args[propName] = contentAfterTool;
+        }
+
+        // For 'query' or 'prompt' parameters, use the remaining content
+        else if (
+          (propName === "query" ||
+            propName === "prompt" ||
+            propName === "question" ||
+            propName === "text") &&
+          prop.type === "string"
+        ) {
+          args[propName] = contentAfterTool;
+        }
+
+        // For 'count' or 'limit' parameters, try to extract numbers
+        else if (
+          (propName === "count" ||
+            propName === "limit" ||
+            propName === "max" ||
+            propName === "num") &&
+          prop.type === "number"
+        ) {
+          const numberMatch = contentAfterTool.match(/\b(\d+)\b/);
+          if (numberMatch) {
+            args[propName] = parseInt(numberMatch[1], 10);
+          }
+        }
+
+        // Special handling for sequential thinking numerical parameters
+        else if (propName === "thoughtNumber" && prop.type === "number") {
+          args[propName] = 1; // Default to first thought
+        } else if (propName === "totalThoughts" && prop.type === "number") {
+          args[propName] = 3; // Default to 3 thoughts
+        }
+
+        // For boolean parameters, check for keywords
+        else if (prop.type === "boolean") {
+          const lowerContent = contentAfterTool.toLowerCase();
+          if (propName === "nextThoughtNeeded") {
+            args[propName] = true; // Default to true for sequential thinking
+          } else if (
+            lowerContent.includes("true") ||
+            lowerContent.includes("yes") ||
+            lowerContent.includes("enable")
+          ) {
+            args[propName] = true;
+          } else if (
+            lowerContent.includes("false") ||
+            lowerContent.includes("no") ||
+            lowerContent.includes("disable")
+          ) {
+            args[propName] = false;
+          }
+        }
+      }
+
+      // If no specific parameters were found but there's content, try to map to the first string parameter
+      if (Object.keys(args).length === 0 && contentAfterTool) {
+        const firstStringProp = Object.entries(properties).find(
+          ([_, prop]) => (prop as any).type === "string"
+        );
+        if (firstStringProp) {
+          args[firstStringProp[0]] = contentAfterTool;
+        }
+      }
+    } else {
+      // Fallback: if no schema available, use common parameter names
+      args.query = contentAfterTool;
+      args.prompt = contentAfterTool;
+      args.text = contentAfterTool;
+      args.question = contentAfterTool;
+    }
+
+    console.log(`[IntentAnalyzer] Extracted args for ${tool.name}:`, args);
+    return args;
   }
 
   private static async removeAtCommands(message: string): Promise<string> {

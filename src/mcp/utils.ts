@@ -276,12 +276,24 @@ export function createRequest(
   method: string,
   params?: Record<string, unknown>
 ): JsonRpcRequest {
-  return {
+  // Debug logging for parameter tracking
+  console.log(`[createRequest] Creating request with:`, {
+    id,
+    method,
+    params,
+    hasParams: !!params,
+    paramsKeys: params ? Object.keys(params) : [],
+  });
+
+  const request = {
     jsonrpc: JSONRPC_VERSION,
     id,
     method,
     ...(params && { params }),
   };
+
+  console.log(`[createRequest] Final request object:`, request);
+  return request;
 }
 
 /**
