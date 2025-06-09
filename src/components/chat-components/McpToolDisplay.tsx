@@ -13,7 +13,7 @@ import {
   Clock,
   Copy,
   Server,
-  Settings,
+  Wrench,
   Zap,
 } from "lucide-react";
 import React, { useState } from "react";
@@ -26,7 +26,10 @@ interface McpToolDisplayProps {
 /**
  * 顯示單個 MCP 工具調用的組件
  */
-const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
+const McpToolCallItem: React.FC<{ toolCall: McpToolCall; index: number }> = ({
+  toolCall,
+  index,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -107,8 +110,8 @@ const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>MCP 伺服器: {toolCall.serverName}</p>
-              <p>伺服器 ID: {toolCall.serverId}</p>
+              <p>來源服務器: {toolCall.serverName}</p>
+              <p>服務器 ID: {toolCall.serverId}</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -146,15 +149,17 @@ const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
           {/* 工具參數 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-muted-foreground">參數:</label>
+              <label className="text-xs font-medium text-muted-foreground">輸入參數:</label>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-auto p-1"
-                onClick={() => copyToClipboard(formatArguments(toolCall.arguments), "args")}
+                onClick={() =>
+                  copyToClipboard(formatArguments(toolCall.arguments), `args-${index}`)
+                }
               >
                 <Copy className="w-3 h-3" />
-                {copiedField === "args" && <span className="ml-1 text-xs">已複製</span>}
+                {copiedField === `args-${index}` && <span className="ml-1 text-xs">已複製</span>}
               </Button>
             </div>
             <pre className="text-xs bg-muted p-2 rounded text-muted-foreground overflow-x-auto">
@@ -166,15 +171,17 @@ const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
           {toolCall.status === "success" && toolCall.result && (
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">結果:</label>
+                <label className="text-xs font-medium text-muted-foreground">執行結果:</label>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-auto p-1"
-                  onClick={() => copyToClipboard(formatResult(toolCall.result), "result")}
+                  onClick={() => copyToClipboard(formatResult(toolCall.result), `result-${index}`)}
                 >
                   <Copy className="w-3 h-3" />
-                  {copiedField === "result" && <span className="ml-1 text-xs">已複製</span>}
+                  {copiedField === `result-${index}` && (
+                    <span className="ml-1 text-xs">已複製</span>
+                  )}
                 </Button>
               </div>
               <pre className="text-xs bg-muted p-2 rounded text-muted-foreground overflow-x-auto max-h-32 overflow-y-auto">
@@ -185,7 +192,7 @@ const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
 
           {toolCall.status === "error" && toolCall.error && (
             <div className="space-y-1">
-              <label className="text-xs font-medium text-red-600">錯誤:</label>
+              <label className="text-xs font-medium text-red-600">錯誤信息:</label>
               <pre className="text-xs bg-red-50 text-red-800 p-2 rounded overflow-x-auto">
                 {toolCall.error}
               </pre>
@@ -207,6 +214,7 @@ const McpToolCallItem: React.FC<{ toolCall: McpToolCall }> = ({ toolCall }) => {
 
 /**
  * 顯示 MCP 工具調用列表的主組件
+ * 改進：更明確地標示這是工具調用結果，與系統狀態區分
  */
 export const McpToolDisplay: React.FC<McpToolDisplayProps> = ({ toolCalls, className }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -223,7 +231,10 @@ export const McpToolDisplay: React.FC<McpToolDisplayProps> = ({ toolCalls, class
     <div className={cn("space-y-2", className)}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-start p-2 h-auto">
+          <Button
+            variant="ghost"
+            className="w-full justify-start p-2 h-auto border border-dashed border-border rounded-md bg-background/20 hover:bg-background/40"
+          >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 {isExpanded ? (
@@ -231,10 +242,10 @@ export const McpToolDisplay: React.FC<McpToolDisplayProps> = ({ toolCalls, class
                 ) : (
                   <ChevronRight className="w-4 h-4" />
                 )}
-                <Settings className="w-4 h-4" />
-                <span className="text-sm font-medium">MCP 工具調用</span>
+                <Wrench className="w-4 h-4" />
+                <span className="text-sm font-medium">工具調用結果</span>
                 <Badge variant="secondary" className="text-xs">
-                  {toolCalls.length}
+                  {toolCalls.length} 個調用
                 </Badge>
               </div>
               <div className="flex items-center gap-1">
@@ -258,8 +269,15 @@ export const McpToolDisplay: React.FC<McpToolDisplayProps> = ({ toolCalls, class
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-2 pt-2">
+          <div className="text-xs text-muted-foreground px-2 mb-2">
+            🔧 本消息中調用的 MCP 工具及其執行結果
+          </div>
           {toolCalls.map((toolCall, index) => (
-            <McpToolCallItem key={`${toolCall.toolName}-${index}`} toolCall={toolCall} />
+            <McpToolCallItem
+              key={`${toolCall.toolName}-${index}`}
+              toolCall={toolCall}
+              index={index}
+            />
           ))}
         </CollapsibleContent>
       </Collapsible>

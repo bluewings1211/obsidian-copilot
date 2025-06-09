@@ -153,9 +153,10 @@ const McpServerItem: React.FC<{ server: McpServerInfo }> = ({ server }) => {
 
 /**
  * MCP 服務器狀態顯示主組件
+ * 改進：只在聊天界面頂部顯示，避免與工具調用狀態重複
  */
 export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // 默認收起以減少干擾
   const [servers, setServers] = useState<McpServerInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -278,7 +279,7 @@ export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) =
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-start p-2 h-auto border border-border rounded-md bg-background/30"
+            className="w-full justify-start p-2 h-auto border border-border rounded-md bg-background/30 hover:bg-background/50"
           >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
@@ -288,9 +289,9 @@ export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) =
                   <ChevronRight className="w-4 h-4" />
                 )}
                 <Server className="w-4 h-4" />
-                <span className="text-sm font-medium">MCP 服務器</span>
+                <span className="text-sm font-medium">MCP 系統狀態</span>
                 <Badge variant="secondary" className="text-xs">
-                  {servers.length}
+                  {servers.length} 個服務器
                 </Badge>
               </div>
               <div className="flex items-center gap-1">
@@ -326,6 +327,9 @@ export const McpServerStatus: React.FC<McpServerStatusProps> = ({ className }) =
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-2 pt-2">
+          <div className="text-xs text-muted-foreground px-2 mb-2">
+            💡 提示：具體的工具調用結果會顯示在相關消息中
+          </div>
           {servers.map((server) => (
             <McpServerItem key={server.id} server={server} />
           ))}

@@ -15,9 +15,8 @@ import {
 } from "@/imageProcessing/imageProcessor";
 // import { BrevilabsClient } from "@/LLMProviders/brevilabsClient"; // BrevilabsClient is no longer used
 import { logInfo } from "@/logger";
-import { McpToolCallTracker } from "@/mcp/tool-call-tracker";
 import { getSettings, getSystemPrompt } from "@/settings/model";
-import { ChatMessage } from "@/sharedState";
+import { ChatMessage, McpToolCall } from "@/sharedState";
 import { ToolManager } from "@/tools/toolManager";
 import {
   err2String,
@@ -105,7 +104,8 @@ abstract class BaseChainRunner implements ChainRunner {
     addMessage: (message: ChatMessage) => void,
     updateCurrentAiMessage: (message: string) => void,
     debug: boolean,
-    sources?: { title: string; score: number }[]
+    sources?: { title: string; score: number }[],
+    mcpToolCalls?: McpToolCall[]
   ) {
     if (fullAIResponse && abortController.signal.reason !== ABORT_REASON.NEW_CHAT) {
       await this.chainManager.memoryManager
@@ -118,6 +118,7 @@ abstract class BaseChainRunner implements ChainRunner {
         isVisible: true,
         timestamp: formatDateTime(new Date()),
         sources: sources,
+        mcpToolCalls: mcpToolCalls,
       });
     }
     updateCurrentAiMessage("");
@@ -496,6 +497,7 @@ class CopilotPlusChainRunner extends BaseChainRunner {
     const { debug = false, updateLoadingMessage } = options;
     let fullAIResponse = "";
     let sources: { title: string; score: number }[] = [];
+    let mcpToolCalls: McpToolCall[] = [];
 
     try {
       // Check if this is a YouTube-only message
@@ -564,7 +566,13 @@ class CopilotPlusChainRunner extends BaseChainRunner {
         .join(" ")
         .trim();
 
-      const toolOutputs = await this.executeToolCalls(toolCalls, debug, updateLoadingMessage);
+      const { toolOutputs, mcpToolCalls: executedMcpCalls } = await this.executeToolCalls(
+        toolCalls,
+        debug,
+        updateLoadingMessage
+      );
+      mcpToolCalls = executedMcpCalls;
+
       const localSearchResult = toolOutputs.find(
         (output) => output.tool === "localSearch" && output.output && output.output.length > 0
       );
@@ -639,7 +647,8 @@ class CopilotPlusChainRunner extends BaseChainRunner {
       addMessage,
       updateCurrentAiMessage,
       debug,
-      sources
+      sources,
+      mcpToolCalls
     );
   }
 
@@ -683,8 +692,10 @@ class CopilotPlusChainRunner extends BaseChainRunner {
     toolCalls: any[],
     debug: boolean,
     updateLoadingMessage?: (message: string) => void
-  ) {
+  ): Promise<{ toolOutputs: any[]; mcpToolCalls: McpToolCall[] }> {
     const toolOutputs = [];
+    const mcpToolCalls: McpToolCall[] = [];
+
     for (let i = 0; i < toolCalls.length; i++) {
       const toolCall = toolCalls[i];
       if (debug) {
@@ -708,23 +719,34 @@ class CopilotPlusChainRunner extends BaseChainRunner {
 
       let output;
       if (isMcpTool) {
-        // Create tracked MCP tool call
-        const trackedCall = McpToolCallTracker.createTrackedToolCall(
-          -1, // We don't have a message index here, will be updated in chat
-          i,
-          {
-            toolName: toolCall.tool.name,
-            originalToolName: toolCall.tool.mcpToolName || toolCall.tool.name,
-            serverName: toolCall.tool.serverName || "unknown",
-            serverId: toolCall.tool.serverId || "unknown",
-            arguments: toolCall.args || {},
-          }
-        );
+        // Create MCP tool call record
+        const mcpToolCall: McpToolCall = {
+          toolName: toolCall.tool.name,
+          originalToolName: toolCall.tool.mcpToolName || toolCall.tool.name,
+          serverName: toolCall.tool.serverName || "unknown",
+          serverId: toolCall.tool.serverId || "unknown",
+          arguments: toolCall.args || {},
+          status: "pending",
+          startTime: Date.now(),
+        };
+
+        mcpToolCalls.push(mcpToolCall);
 
         try {
-          output = await trackedCall.execute();
-        } catch {
-          // Error is already handled by the tracker
+          // Execute MCP tool directly
+          output = await ToolManager.callTool(toolCall.tool, toolCall.args);
+
+          // Update status to success
+          mcpToolCall.status = "success";
+          mcpToolCall.result = output;
+          mcpToolCall.endTime = Date.now();
+          mcpToolCall.duration = mcpToolCall.endTime - mcpToolCall.startTime;
+        } catch (error) {
+          // Update status to error
+          mcpToolCall.status = "error";
+          mcpToolCall.error = error instanceof Error ? error.message : String(error);
+          mcpToolCall.endTime = Date.now();
+          mcpToolCall.duration = mcpToolCall.endTime - mcpToolCall.startTime;
           output = null;
         }
       } else {
@@ -734,7 +756,8 @@ class CopilotPlusChainRunner extends BaseChainRunner {
 
       toolOutputs.push({ tool: toolCall.tool.name, output });
     }
-    return toolOutputs;
+
+    return { toolOutputs, mcpToolCalls };
   }
 
   private prepareEnhancedUserMessage(userMessage: string, toolOutputs: any[]) {

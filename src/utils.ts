@@ -134,9 +134,9 @@ export function getTagsFromNote(file: TFile, frontmatterOnly = true): string[] {
   const allTags = new Set<string>();
 
   if (!frontmatterOnly) {
-    const inlineTags = metadata?.tags?.map((tag) => tag.tag);
+    const inlineTags = metadata?.tags?.map((tag: any) => tag.tag);
     if (inlineTags) {
-      inlineTags.forEach((tag) => allTags.add(stripHash(tag)));
+      inlineTags.forEach((tag: any) => allTags.add(stripHash(tag)));
     }
   }
 

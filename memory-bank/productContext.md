@@ -34,3 +34,35 @@ Obsidian Copilot 是一個 AI 助手插件，為 Obsidian 提供聊天介面、�
 2. 動態發現和使用 MCP 工具
 3. 管理 MCP 資源和提示
 4. 提供 MCP 設定介面
+
+## AG-UI 整合分析
+
+[2025-06-09 00:13:00] - # AG-UI 整合分析
+
+## AG-UI 工具概覽
+
+AG-UI (Agent-User Interaction Protocol) 是一個專門用於將 AI Agents 整合到前端應用的標準化協議，提供：
+
+- **標準化 Agent 協議**: 統一的事件流通訊 (RUN_STARTED, TEXT_MESSAGE_CONTENT, TOOL_CALL_START 等)
+- **Real-time 狀態同步**: 使用 useCoAgent hook 實現前後端雙向狀態同步
+- **Human-in-the-loop 工具系統**: 前端定義工具，Agent 可調用實現互動確認
+- **事件驅動架構**: 基於 RxJS Observable 的流式互動
+- **多種 Agent 支援**: HttpAgent, AbstractAgent，支援 OpenAI, LangGraph 等
+
+## 與現有 MCP 系統的差異
+
+- **MCP**: 專注於工具和資源的標準化，提供統一的工具調用接口
+- **AG-UI**: 專注於前端整合和使用者互動，提供豐富的 Agent-Frontend 通訊
+- **互補性**: MCP 處理工具層，AG-UI 處理互動層，可以協同工作
+
+## 建議的整合架構
+
+```
+Obsidian Frontend (React + AG-UI)
+    ↓ (AG-UI Protocol)
+ObsidianAgentWrapper (AG-UI AbstractAgent)
+    ↓ (ChainManager API)
+ChainManager (現有 LLM 管理)
+    ↓ (MCP Protocol)
+MCP Tools & Resources
+```
